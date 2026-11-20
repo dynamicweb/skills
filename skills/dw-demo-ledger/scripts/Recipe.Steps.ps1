@@ -120,7 +120,29 @@ function Find-RecipeConflict {
     $rows = Read-RecipeRows $select.binding $Context $Run
     $hits = Select-RecipeBindingMatches $rows $select.binding $Context
     if ($hits.Count -eq 0) { return $null }
+    # The input opted in (adopt true): the object that collides becomes this item's object instead of blocking it.
+    if ($spec.adopt -and (Test-RecipeCondition $spec.adopt.when $Context)) { return Find-RecipeAdopted $spec.adopt $Context $Run }
     return @{state = 'CONFLICT'; row = $null; fields = @(); binding = $select.binding; reason = [string]$spec.reason}
+}
+function Find-RecipeAdopted {
+    # find.conflict.adopt: locate finds exactly one object where the create would collide ({found.*} reads it), then the
+    # bindings read that object and compare it. Anything else stays a conflict, with the reason it could not be adopted.
+    param($Adopt, $Context, $Run)
+    $conflict = { param($binding, $why) @{state = 'CONFLICT'; row = $null; fields = @(); binding = $binding; reason = "adopt was asked for, and $why; nothing is written"} }
+    $select = Select-RecipeRead $Adopt.locate $Run.cap $Run.registry
+    if (-not $select.binding) { throw (New-RecipeFault ('no eligible adopt.locate binding: ' + ($select.reasons -join '; '))) }
+    $rows = Read-RecipeRows $select.binding $Context $Run
+    $located = Select-RecipeBindingMatches $rows $select.binding $Context
+    if ($located.Count -ne 1) { return (& $conflict $select.binding "$($located.Count) object(s) of $($select.binding.operation) are there, not one, so which one to adopt is not known") }
+    $Context.found = $located[0]
+    $select = Select-RecipeRead $Adopt.bindings $Run.cap $Run.registry
+    if (-not $select.binding) { throw (New-RecipeFault ('no eligible adopt binding: ' + ($select.reasons -join '; '))) }
+    $rows = Read-RecipeRows $select.binding $Context $Run
+    $hits = Select-RecipeBindingMatches $rows $select.binding $Context
+    if ($hits.Count -ne 1) { return (& $conflict $select.binding "$($select.binding.operation) read the located object $($hits.Count) time(s), not once") }
+    $differs = if ($select.binding.compare) { Get-RecipeDifferences $hits[0] (Expand-RecipeValue $select.binding.compare $Context) $select.binding.operation $select.binding.unordered } else { @() }
+    if ($differs.Count) { return (& $conflict $select.binding ("the object there differs from the input in " + ($differs -join ', ') + ', which adoption never changes')) }
+    return @{state = 'ADOPTED'; row = $hits[0]; fields = @(); binding = $select.binding}
 }
 function Get-RecipeDeliveredOwner {
     # deliveredWith: the object this item belongs to, when a layer delivered it ("categories 'tools'"), else $null.
@@ -152,6 +174,12 @@ function Invoke-RecipeStepItem {
     }
     if ($found.state -eq 'DELIVERED') {
         Set-RecipeDelivered $Run $Step $Key "a layer delivered it under its own keys ($($found.binding.operation))" -Observed; $Printed.Value = $true; return
+    }
+    if ($found.state -eq 'ADOPTED') {
+        # Never created: the object that answers where the input's would is this item's object, and the later steps write the input onto it.
+        Add-RecipeStepLine $Run $Step.id 'ADOPTED' $Key; $Printed.Value = $true
+        Add-RecipeCheck $Run $name 'PASS'
+        $Run.lines.Add("NOTE ${name}: adopted the object that answers where a create would collide ($($found.binding.operation)" + $(if ($result.values.Contains('id')) { " id $($result.values['id'])" }) + '); nothing created, and the later steps write the input onto it'); return
     }
     if ($found.state -eq 'CONFLICT') {
         # Never written, in a verify run or an apply: the input and the site disagree about who owns this, and a person decides.

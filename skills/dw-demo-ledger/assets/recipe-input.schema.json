@@ -237,6 +237,15 @@
                 "pattern": "^/[A-Za-z0-9/_-]*$",
                 "description": "The path the page answers at, language prefix included, when the input expects it to render publicly."
               },
+              "adopt": {
+                "type": "boolean",
+                "description": "true: when another page already answers at path (a base's sample page, the home page), write this item onto that page instead of blocking, and take the page's rows and paragraphs the item does not name off it (rows inactive, paragraphs unbound and inactive, never deleted; the report names each). Needs path; refused without rows and paragraphs, so a page is never stripped bare. Also applies to a page found by its menu text. An adopted page keeps its own parent. Absent or false: a page at the path blocks the item."
+              },
+              "footer": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Menu text of the footer column folder the page is linked from (on the sample base: About the shop, Help and info): a shortcut page under the column points at this page, which keeps its own place and path. Needs path for the probe."
+              },
               "rows": {
                 "type": "array",
                 "items": {

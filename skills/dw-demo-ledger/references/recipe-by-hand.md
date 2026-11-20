@@ -40,10 +40,11 @@ and what each leaves undone is [recipe-index.md](recipe-index.md).
 | `readBack` | After the write, read again and check `expect`. The id comes from this read, never from the write's answer |
 | `produces` | Values to remember per key for later steps: `{step.pages[item.parent].id}` is the id the `pages` step produced for the key this item's `parent` names |
 | `find.delivered` | Only when `find.bindings` matched nothing: call this binding the same way. A matching row means a layer copy delivered the object under its own keys: report it DELIVERED and write nothing |
+| `find.conflict` | Only when nothing matched: read these bindings; a matching row means a create would collide (another page answers at the path): report BLOCKED and write nothing. With `adopt` and its `when` true on the item, instead read `adopt.locate` (exactly one row, `{found.x}`), then `adopt.bindings` with `compare`: equal means ADOPTED, that object is the item's, and the later steps write onto it |
 | `deliveredWith` | The object this item belongs to. When that one is DELIVERED and this item would be created or changed, report it DELIVERED too and write nothing |
 | `matchSuffix` | Keep only the rows whose member ends with this text, ignoring case (a file the copy stored under its own folder) |
 | `ignoreCase` | Compare these `match` members ignoring letter case, and use the row's own spelling afterwards |
-| `retire` | Once per key: read `retire.binding`, keep the rows whose `active.field` is `active.value`, drop those a `keep` rule names (the input's names; `{step.x[*].id}` is every id step x found or wrote). Set each remaining row inactive with the `update` binding (`{row.<member>}` is that row) and read back. Never delete; when `named` resolves to nothing, a `requires` step blocked, or more than `max` would go, stop and report it |
+| `retire` | Once per key: read `retire.binding`, keep the rows whose `active.field` is `active.value`, drop those a `keep` rule names (the input's names; `{step.x[*].id}` is every id step x found or wrote; a rule with `also` needs each of its conditions too). Set each remaining row inactive with the `update` binding (`{row.<member>}` is that row) and read back. Never delete; when `named` resolves to nothing, a `requires` step blocked, or more than `max` would go, stop and report it |
 | `trap` | A platform fact that bites this step; read it before the call |
 
 Tokens: `{input.x}` is the recipe's input section, `{item.x}` and `{parent.x}` the forEach element,

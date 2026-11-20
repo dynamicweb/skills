@@ -187,12 +187,18 @@ set; nothing named refuses the item, so a retire never empties a set. A step in 
 blocked an item refuses it too (a named method found twice has no known id). The `binding` reads the
 set; a row whose `active.field` holds `active.value` is active, and an active row is kept when its
 member equals a value of any `keep` rule: the input's names, or `{step.<id>[*].<field>}`, every value
-an earlier step of this run produced under that name. The rest is the set to retire, each named by
+an earlier step of this run produced under that name. A rule with `also` holds only when each of its
+conditions holds too (a paragraph whose row the input keeps and whose sort the input names). The rest is the set to retire, each named by
 its `identify` members; more than `max` refuses the item. Without `-Apply` each row is
 `STEP retire-payment WOULD-RETIRE payment@PAY2/Standard invoice`; with it each is written through the
 first eligible `update` binding (arguments read the row as `{row.<member>}`), `STEP retire-payment
 RETIRED payment@PAY2/Standard invoice`, and read back: the `readBack` must no longer return the row
 active. A NOTE counts what was retired and kept. Setting the row active again restores it.
+`content.pages` uses retire steps for adoption: on a page the input adopts (`adopt: true`), the
+paragraphs and grid rows the input does not name come off the page (`adopt-paragraphs`: unbound from
+their row and inactive, because the platform keeps every paragraph in a row active; `adopt-rows`:
+inactive), each reported by id (`STEP adopt-rows RETIRED Delivery@141/4/2Columns_8-4`). A page the
+input names with `adopt` and no paragraphs is refused, so adoption never strips a page bare.
 A step with an empty `bindings` list is a lookup: it finds an object another function owns (the
 header page a website selects) and produces values for later steps, and never writes. An absent
 object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.
@@ -210,6 +216,7 @@ delivery itself, per object, with no flag:
 | `find.delivered` | Read bindings in the copy's shape, read only when the find matched nothing. One matching row or more is the object the copy delivered: `STEP <step> DELIVERED <key>` and a passing check. It is never written; values come from it (`produces`) only when exactly one row matched |
 | `deliveredWith` `{step, key}` | The object this item belongs to (`key` defaults to the item's own key). When that object is DELIVERED, an item that would be created or changed is DELIVERED too: a NOTE, not a check, and nothing is written into the layer's object. An item found equal still passes |
 | `find.conflict` `{reason, skipWhen, bindings}` | Read only when the find and `find.delivered` matched nothing: an object the input does not own that a create would collide with (another page already answers at the input's path, so a new page would be served at the path with -1). A matching row blocks the item, in a verify run and an apply: `STEP <step> BLOCKED <key>`, an OPEN check with the reason, nothing written |
+| `find.conflict.adopt` `{when, locate, bindings}` | When the condition holds on the item (the input opts in, `adopt: true`), the colliding object is adopted instead: `locate` must find exactly one row (`{found.*}` reads it), then `bindings` read that object, `compare` it and `produce` its values. `STEP <step> ADOPTED <key>`, a passing check and a NOTE naming the object; nothing is created and the later steps write the input onto it. Anything but one row, or a compare that differs, keeps the item BLOCKED with the reason |
 | `matchSuffix` `{member: text}` | A read matches only rows whose member ends with the text, ignoring case: a file the copy stored under its own folder, found by its file name |
 
 A token that reads a DELIVERED object that produced no value makes its item DELIVERED as well; on a
@@ -259,7 +266,10 @@ A delivery read is `dwapi-get` (anonymous, on `dwapiReadRoutes`) or `dwapi-signe
 the password a `{secret.*}` token, and sends the token for that one read only; neither is kept or
 printed. A `{name}` in the route takes the argument of that name (`ecommerce/products/{productId}`);
 the other arguments are the query. This is how a recipe proves what a visitor and a signed-in buyer
-are served, not only what is stored.
+are served, not only what is stored. `storefront-links` reads the storefront itself: the anonymous
+page at `arguments.path`, rendered, and the links `{href, text}` inside the region its operation
+names (`footer` or `header`, on `recipeStorefrontRegions`); no credential is sent and the markup is
+neither kept nor printed. `content.pages` proves a footer link with it.
 
 `checkIds` run through [Invoke-DwLedgerChecks.ps1](../scripts/Invoke-DwLedgerChecks.ps1) when
 `-LedgerBuildFile` and `-Manifest` are given, under that runner's own rules (a clean checkout at the

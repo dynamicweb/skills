@@ -140,7 +140,7 @@
         "reason": {"type": "string", "minLength": 1},
         "source": {"type": "string", "minLength": 1},
         "mcpSince": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+", "description": "MCP only: the add-in version this binding is first proven on. Read by the validator alone (modes per provenOn version); the runner never compares versions."},
-        "requiresSchema": {"type": "object", "additionalProperties": false, "minProperties": 1, "description": "MCP only: the binding runs only when its tool's tools/list schema carries every member named (input: the arguments; output: the structured result), as dotted paths with [*] for array items; otherwise the runner falls to the next binding.", "properties": {"input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "output": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}},        "handler": {"enum": ["dwapi-get", "dwapi-signed-in-get", "dwapi-sign-in", "dwapi-persona-sign-in"]},
+        "requiresSchema": {"type": "object", "additionalProperties": false, "minProperties": 1, "description": "MCP only: the binding runs only when its tool's tools/list schema carries every member named (input: the arguments; output: the structured result), as dotted paths with [*] for array items; otherwise the runner falls to the next binding.", "properties": {"input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "output": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}},        "handler": {"enum": ["dwapi-get", "dwapi-signed-in-get", "dwapi-sign-in", "dwapi-persona-sign-in", "storefront-links"], "description": "storefront-links: the anonymous storefront page at arguments.path, rendered; the rows (links) are the links {href, text} inside the region the operation names (footer or header, on recipeStorefrontRegions)."},
         "signIn": {"type": "object", "additionalProperties": false, "required": ["username", "password"], "description": "dwapi-signed-in-get only: the user the read signs in as; the password is a {secret.*} token.", "properties": {"username": {"type": "string", "minLength": 1}, "password": {"type": "string", "pattern": "^\\{secret\\.[^{}]+\\}$"}}},
         "operation": {"type": "string"},
         "arguments": {"type": "object"},
@@ -244,7 +244,18 @@
               "properties": {
                 "reason": {"type": "string", "minLength": 20},
                 "skipWhen": {"$ref": "#/definitions/skipWhen"},
-                "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
+                "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
+                "adopt": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["when", "locate", "bindings"],
+                  "description": "When the condition holds (the input opts in per item), the object that collides is adopted instead of blocking the item: locate finds exactly one row ({found.*} reads it), then bindings read that object, compare it and produce its values. Anything but one row, or a compare that differs, blocks the item as a conflict. An adopted item is ADOPTED: never created, and the later steps write the input onto it.",
+                  "properties": {
+                    "when": {"$ref": "#/definitions/condition"},
+                    "locate": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
+                    "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
+                  }
+                }
               }
             }
           }
@@ -318,6 +329,7 @@
                 "additionalProperties": false,
                 "required": ["field", "values"],
                 "properties": {
+                  "also": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["field", "values"], "properties": {"field": {"type": "string", "minLength": 1}, "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$"}}}, "description": "Further conditions that must hold as well for the rule to keep a row (a paragraph's row kept and its sort named)."},
                   "field": {"type": "string", "minLength": 1, "description": "The row member compared."},
                   "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token for the values kept: input names, or {step.<id>[*].<field>} for what an earlier step of this run found or wrote."}
                 }

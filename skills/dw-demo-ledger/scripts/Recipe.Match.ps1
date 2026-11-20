@@ -124,7 +124,7 @@ function Get-RecipeSurfaceFault {
             if (-not $Capabilities.sql) { return 'SQL is not enabled (local install, -AllowSql with -SqlServer and -Database)' }
         }
         'dwapi' {
-            $routes = switch ($Binding.handler) { 'dwapi-get' { $Registry.dwapiReadRoutes } 'dwapi-signed-in-get' { $Registry.recipeSignedInReadRoutes } default { $Registry.dwapiSignInRoutes } }
+            $routes = switch ($Binding.handler) { 'dwapi-get' { $Registry.dwapiReadRoutes } 'dwapi-signed-in-get' { $Registry.recipeSignedInReadRoutes } 'storefront-links' { $Registry.recipeStorefrontRegions } default { $Registry.dwapiSignInRoutes } }
             if ($Operation -cnotin @($routes)) { return "delivery route $Operation is not on the allowlist for $($Binding.handler)" }
             if (-not $Capabilities.dwapi) { return 'the delivery API is not a permitted surface for this run' }
         }

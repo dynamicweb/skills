@@ -55,7 +55,7 @@ Export-ModuleMember -Function *
             # The output schemas a target lists; fetch_frontend_page_html reports finalPath on a server that follows redirects.
             outputs = @{fetch_frontend_page_html = @{type = 'object'; properties = @{statusCode = @{type = 'integer'}; finalPath = @{type = @('string', 'null')}}}}
             tools = @{
-                get_pages_by_parent_id = Get-Schema @('parentId', 'areaId') @('parentId'); save_pages = Get-Schema @('pages') @('pages')
+                get_pages_by_parent_id = Get-Schema @('parentId', 'areaId') @('parentId'); save_pages = Get-Schema @('pages') @('pages'); get_pages_by_ids = Get-Schema @('pageIds') @('pageIds')
                 get_page_item_field_values = Get-Schema @('pageId') @('pageId'); set_page_item_fields = Get-Schema @('pageId', 'fields') @('pageId', 'fields')
                 get_grid_rows_by_page_id = Get-Schema @('pageId') @('pageId'); save_grid_rows = Get-Schema @('gridRows') @('gridRows')
                 get_paragraphs_by_page_id = Get-Schema @('pageId') @('pageId'); save_paragraphs = Get-Schema @('paragraphs') @('paragraphs')
@@ -87,6 +87,7 @@ Export-ModuleMember -Function *
             $rowsOf = { param($fieldMap) , @(foreach ($k in $fieldMap.Keys) { $r = @{fieldSystemName = $k}; if ($null -ne $fieldMap[$k]) { $r.value = $fieldMap[$k] }; $r }) }
             $data = switch ($Tool) {
                 'get_pages_by_parent_id' { , @($s.pages | Where-Object { $_.parentPageId -eq [int]$Arguments.parentId }) }
+                'get_pages_by_ids' { , @($s.pages | Where-Object { $_.id -in @($Arguments.pageIds | ForEach-Object { [int]$_ }) }) }
                 'save_pages' {
                     foreach ($p in $Arguments.pages) {
                         if ([int]$p.id -eq 0) { $id = & $mint; $s.pages.Add(@{id = $id; parentPageId = [int]$p.parentPageId; menuText = $p.menuText; urlName = $p.urlName; itemType = $p.itemType; sort = $p.sort}); $s.fields["page$id"] = [ordered]@{Title = $null} }
@@ -1486,5 +1487,157 @@ Describe 'Invoke-DwRecipe on a retire step (orders.payment-methods retire-paymen
         $b = Invoke-Runner $script:Root @{Recipe = (Save-Recipe); InputPath = (Write-Input $script:Checkout 'checkout'); Apply = $true}
         ($b.lines -match '^FAIL retire-payment/payment: refused: 31 active row\(s\) of .get_payment_methods. the input does not name, more than retire.max 25').Count | Should -Be 1
         Get-MethodSaves | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'Invoke-DwRecipe on content.pages: adopting the page at the input path, and footer links' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        function New-SiteStub {
+            # A sample base: the footer column folder Help and info (60) holds the page Delivery (50), served at
+            # /en-us/delivery because the folder leaves its segment out; Delivery has two rows and a paragraph in each.
+            New-Stub
+            $s = $global:RecipeStub
+            foreach ($t in @('get_navigation_structure', 'get_pages_by_area_id')) { $s.tools[$t] = Get-Schema @('areaId') @('areaId') }
+            $s.tools.get_pages_by_ids = Get-Schema @('pageIds') @('pageIds')
+            $s.pages.Add(@{id = 60; parentPageId = 0; menuText = 'Help and info'; urlName = 'help-and-info'; itemType = ''; active = $true})
+            $s.pages.Add(@{id = 50; parentPageId = 60; menuText = 'Delivery'; urlName = 'delivery'; itemType = 'Swift-v2_Page'; active = $true})
+            $s.fields['page50'] = [ordered]@{Title = 'Delivery'}
+            $s.rows.Add(@{id = 70; pageId = 50; sort = 1; definitionId = '1Column'; container = 'Grid'; active = $true})
+            $s.rows.Add(@{id = 71; pageId = 50; sort = 2; definitionId = '3Columns'; container = 'Grid'; active = $true})
+            $s.paragraphs.Add(@{id = 80; pageId = 50; gridRowId = 70; gridRowColumn = 1; sort = 1; itemType = 'Swift-v2_Text'; active = $true})
+            $s.paragraphs.Add(@{id = 81; pageId = 50; gridRowId = 71; gridRowColumn = 1; sort = 2; itemType = 'Swift-v2_Text'; active = $true})
+            $s.fields['para80'] = [ordered]@{Title = 'Stock title'}; $s.fields['para81'] = [ordered]@{Title = 'Stock counter'}
+            $inner = $s.mcp
+            $s.mcp = {
+                param($Tool, $Arguments)
+                $s = $global:RecipeStub
+                $ok = @{structuredContent = @{succeeded = 1; failed = 0; errors = @()}}
+                $set = { param($row, $m, [string[]]$skip) foreach ($k in $m.Keys) { if ($k -notin $skip) { $row[$k] = $m[$k] } } }
+                switch ($Tool) {
+                    'get_navigation_structure' { return @{structuredContent = @{success = $true; items = @($s.pages | Where-Object { $_.active -and $_.urlName } | ForEach-Object { @{pageId = $_.id; name = $_.menuText; url = '/en-us/' + $_.urlName} })}} }
+                    'get_pages_by_area_id' { return @{structuredContent = @{count = $s.pages.Count; data = @($s.pages)}} }
+                    'get_pages_by_ids' { return @{structuredContent = @{data = @($s.pages | Where-Object { $_.id -in @($Arguments.pageIds | ForEach-Object { [int]$_ }) })}} }
+                    'save_pages' {
+                        foreach ($p in $Arguments.pages) {
+                            if ([int]$p.id -eq 0) {
+                                $s.nextId++; $id = $s.nextId
+                                $s.pages.Add(@{id = $id; parentPageId = [int]$p.parentPageId; menuText = $p.menuText; urlName = $p.urlName; itemType = $p.itemType; sort = $p.sort; active = [bool]$p.active; shortCut = $p.shortCut}); $s.fields["page$id"] = [ordered]@{Title = $null}
+                            } else { & $set @($s.pages | Where-Object { $_.id -eq [int]$p.id })[0] $p @('id') }
+                        }
+                        return $ok
+                    }
+                    # An inactive row is left out of the read, as measured on 10.30.6.
+                    'get_grid_rows_by_page_id' { return @{structuredContent = @{data = @($s.rows | Where-Object { $_.pageId -eq [int]$Arguments.pageId -and $_.active -ne $false })}} }
+                    'save_grid_rows' {
+                        foreach ($r in $Arguments.gridRows) {
+                            if ([int]$r.id -eq 0) { $s.nextId++; $s.rows.Add(@{id = $s.nextId; pageId = [int]$r.pageId; sort = $r.sort; definitionId = $r.definitionId; container = $r.container; active = $true}) }
+                            else { & $set @($s.rows | Where-Object { $_.id -eq [int]$r.id })[0] $r @('id') }
+                        }
+                        return $ok
+                    }
+                    'save_paragraphs' {
+                        $creates = @($Arguments.paragraphs | Where-Object { [int]$_.id -eq 0 })
+                        foreach ($p in @($Arguments.paragraphs | Where-Object { [int]$_.id -ne 0 })) { & $set @($s.paragraphs | Where-Object { $_.id -eq [int]$p.id })[0] $p @('id') }
+                        # A grid cell holds one paragraph: a create into an occupied cell is refused, as measured on 10.30.6.
+                        $taken = @($creates | Where-Object { $c = $_; @($s.paragraphs | Where-Object { $_.gridRowId -eq [int]$c.gridRowId -and $_.gridRowId -ne 0 -and $_.gridRowColumn -eq $c.gridRowColumn }).Count })
+                        if ($taken.Count) { return @{structuredContent = @{succeeded = 0; failed = $taken.Count; errors = @('cell taken')}} }
+                        if ($creates.Count) { $null = & $inner $Tool @{paragraphs = $creates}; foreach ($p in $s.paragraphs) { if ($null -eq $p.active) { $p.active = $true } } }
+                        return $ok
+                    }
+                    default { return (& $inner $Tool $Arguments) }
+                }
+            }.GetNewClosure()
+        }
+        $script:Page = {
+            @{menuText = 'Delivery'; urlName = 'delivery'; itemType = 'Swift-v2_Page'; path = '/en-us/delivery'
+                rows = @(@{sort = 1; definitionId = '1Column'; container = 'Grid'; itemType = 'Swift-v2_Row'})
+                paragraphs = @(@{row = 1; column = 1; sort = 5; itemType = 'Swift-v2_Text'; fields = @{Title = 'Delivery'; Text = '<p>Copy.</p>'; FirstButton = ''}})}
+        }
+        function Get-PageWrites { @($global:RecipeStub.log | Where-Object { $_ -match '^mcp (save_|set_)' }) }
+    }
+    It 'blocks a page at the input path without adopt, and with adopt writes onto it and retires exactly what the input does not name' {
+        New-SiteStub
+        $page = & $script:Page
+        $b = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = (Write-Input @{pages = @($page)} 'content.pages'); Apply = $true}
+        $b.lines | Should -Contain 'STEP pages BLOCKED Delivery'
+        Get-PageWrites | Should -BeNullOrEmpty
+        $page.adopt = $true
+        $in = Write-Input @{pages = @($page)} 'content.pages'
+        $v = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in}
+        $v.lines | Should -Contain 'STEP pages ADOPTED Delivery'
+        @($v.lines -match '^STEP adopt-(paragraphs|rows) ') | Should -Be @('STEP adopt-rows WOULD-RETIRE Delivery@71/2/3Columns', 'STEP adopt-paragraphs WOULD-RETIRE Delivery@80/Swift-v2_Text', 'STEP adopt-paragraphs WOULD-RETIRE Delivery@81/Swift-v2_Text')
+        Get-PageWrites | Should -BeNullOrEmpty
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; Apply = $true}
+        $a.lines | Should -Contain 'STEP pages ADOPTED Delivery'
+        ($a.lines -match '^NOTE pages/Delivery: adopted the object that answers where a create would collide \(get_pages_by_ids id 50\)').Count | Should -Be 1
+        $a.lines | Should -Contain 'STEP paragraphs CREATED Delivery/1/5'
+        @($a.lines -match '^STEP adopt-(paragraphs|rows) ') | Should -Be @('STEP adopt-rows RETIRED Delivery@71/2/3Columns', 'STEP adopt-paragraphs RETIRED Delivery@80/Swift-v2_Text', 'STEP adopt-paragraphs RETIRED Delivery@81/Swift-v2_Text')
+        @(Get-PageWrites | Where-Object { $_ -like 'mcp save_pages *' }) | Should -BeNullOrEmpty
+        $s = $global:RecipeStub
+        @($s.paragraphs | Where-Object { $_.id -in 80, 81 } | ForEach-Object { "$($_.id):$($_.gridRowId):$($_.active)" }) | Should -Be @('80:0:False', '81:0:False')
+        @($s.rows | ForEach-Object { "$($_.id):$($_.active)" }) | Should -Be @('70:True', '71:False')
+        $s.pages.Count | Should -Be 2
+        $a.exit | Should -Be 0
+        $writes = (Get-PageWrites).Count
+        $again = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; Apply = $true}
+        $again.lines | Should -Contain 'STEP adopt-paragraphs UNCHANGED Delivery'
+        $again.lines | Should -Contain 'STEP adopt-rows UNCHANGED Delivery'
+        (Get-PageWrites).Count | Should -Be $writes
+        $again.exit | Should -Be 0
+    }
+    It 'refuses to retire from an adopted page the input gives no paragraphs, and never adopts a page of another item type' {
+        New-SiteStub
+        $page = & $script:Page; $page.adopt = $true; $page.Remove('paragraphs')
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = (Write-Input @{pages = @($page)} 'content.pages'); Apply = $true}
+        ($a.lines -match '^OPEN adopt-paragraphs/Delivery: refused: the input names nothing in this set').Count | Should -Be 1
+        @($global:RecipeStub.paragraphs | Where-Object { $_.active -eq $false }) | Should -BeNullOrEmpty
+        New-SiteStub
+        $page = & $script:Page; $page.adopt = $true; $page.itemType = 'Swift-v2_Shop'
+        $b = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = (Write-Input @{pages = @($page)} 'content.pages'); Apply = $true}
+        $b.lines | Should -Contain 'STEP pages BLOCKED Delivery'
+        ($b.lines -match '^OPEN pages/Delivery: .*adopt was asked for, and the object there differs from the input in itemType').Count | Should -Be 1
+        Get-PageWrites | Should -BeNullOrEmpty
+    }
+    It 'links a page from the footer column the input names with a shortcut page, once, and refuses a page that already sits in the column' {
+        New-SiteStub
+        $warranty = @{menuText = 'Warranty'; urlName = 'warranty'; itemType = 'Swift-v2_Page'; path = '/en-us/warranty'; footer = 'Help and info'}
+        $in = Write-Input @{pages = @($warranty)} 'content.pages'
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; Apply = $true}
+        $a.lines | Should -Contain 'STEP footer-columns UNCHANGED Help and info'
+        $a.lines | Should -Contain 'STEP footer-links CREATED Warranty'
+        $a.lines | Should -Contain 'PASS footer-links/Warranty'
+        $target = @($global:RecipeStub.pages | Where-Object { $_.menuText -eq 'Warranty' -and $_.parentPageId -eq 0 })[0]
+        $link = @($global:RecipeStub.pages | Where-Object { $_.parentPageId -eq 60 -and $_.menuText -eq 'Warranty' })
+        $link.Count | Should -Be 1
+        $link[0].shortCut | Should -Be "Default.aspx?ID=$($target.id)"
+        $link[0].urlName | Should -Be 'warranty-link'
+        $link[0].itemType | Should -BeNullOrEmpty
+        $again = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; Apply = $true}
+        $again.lines | Should -Contain 'STEP footer-links UNCHANGED Warranty'
+        @($global:RecipeStub.pages | Where-Object { $_.parentPageId -eq 60 }).Count | Should -Be 2
+        $page = & $script:Page; $page.adopt = $true; $page.footer = 'Help and info'
+        $c = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = (Write-Input @{pages = @($page)} 'content.pages'); Apply = $true}
+        ($c.lines -match '^OPEN footer-links/Delivery: .*the page itself already sits in this footer column').Count | Should -Be 1
+        @($global:RecipeStub.pages | Where-Object { $_.shortCut -eq 'Default.aspx?ID=50' }) | Should -BeNullOrEmpty
+    }
+}
+
+Describe 'storefront-links: the links of one region of a rendered storefront page' {
+    BeforeAll {
+        . (Join-Path $script:Source 'scripts/Recipe.Transport.ps1')
+        $script:RecipeTarget = @{baseUrl = 'https://stub.invalid'; insecure = $false}
+    }
+    It 'returns the footer links only, with their text decoded and tags stripped, and fails a page that does not answer 200' {
+        Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 200; Content = '<header><a href="/en-us/shop">Shop</a></header><main><a href="/x">X</a></main><footer data-x="1"><nav><a class="nav-link" href="/en-us/warranty" id="n1"><span>Warranty &amp; returns</span></a><a href="/en-us/about">About</a></nav></footer>'} }
+        $binding = @{surface = 'dwapi'; handler = 'storefront-links'; operation = 'footer'; arguments = @{path = '{item.path}'}}
+        $data = Invoke-RecipeStorefrontLinks $binding @{item = @{path = '/en-us/warranty'}}
+        @($data.links | ForEach-Object { "$($_.href)|$($_.text)" }) | Should -Be @('/en-us/warranty|Warranty & returns', '/en-us/about|About')
+        Should -Invoke Invoke-WebRequest -Times 1 -ParameterFilter { $Uri -eq 'https://stub.invalid/en-us/warranty' -and -not $Headers.Contains('Authorization') }
+        Mock Invoke-WebRequest { [pscustomobject]@{StatusCode = 404; Content = ''} }
+        { Invoke-RecipeStorefrontLinks $binding @{item = @{path = '/en-us/warranty'}} } | Should -Throw '*answered HTTP 404*'
+        { Invoke-RecipeStorefrontLinks $binding @{item = @{path = 'https://elsewhere.invalid/'}} } | Should -Throw '*reads a site path*'
     }
 }

@@ -180,6 +180,25 @@ function Invoke-RecipeDeliveryGet {
     if ($status -ne 200) { throw (New-RecipeFault "Delivery route $($Binding.operation) answered HTTP $status.") }
     return , (ConvertTo-RecipeData ([string]$response.Content))
 }
+function Invoke-RecipeStorefrontLinks {
+    # storefront-links: the anonymous storefront page at arguments.path as rendered, and the links (href, text) inside the
+    # first element the operation names (footer or header). No credential is sent; the markup itself is never kept or printed.
+    param($Binding, $Context)
+    $region = [string]$Binding.operation
+    $path = [string](Expand-RecipeValue $Binding.arguments $Context).path
+    if ($path -notmatch '^/[A-Za-z0-9/_-]*$') { throw (New-RecipeFault "Runner input: storefront-links reads a site path such as /en-us/about, not '$path'.") }
+    $response = Invoke-WebRequest -Uri ($script:RecipeTarget.baseUrl + $path) -Method Get -Headers @{Accept = 'text/html'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $status = [int]$response.StatusCode
+    if ($status -ne 200) { throw (New-RecipeFailure "Storefront page $path answered HTTP $status.") }
+    $part = [regex]::Match([string]$response.Content, "(?is)<$region\b[^>]*>(?<body>.*?)</$region>")
+    if (-not $part.Success) { throw (New-RecipeFailure "Storefront page $path renders no $region element.") }
+    $links = foreach ($a in [regex]::Matches($part.Groups['body'].Value, '(?is)<a\b(?<attrs>[^>]*)>(?<inner>.*?)</a>')) {
+        $href = [regex]::Match($a.Groups['attrs'].Value, '(?i)\bhref\s*=\s*"(?<h>[^"]*)"').Groups['h'].Value
+        $text = ([regex]::Replace($a.Groups['inner'].Value, '<[^>]+>', ' ') -replace '\s+', ' ').Trim()
+        @{href = [Net.WebUtility]::HtmlDecode($href); text = [Net.WebUtility]::HtmlDecode($text)}
+    }
+    return @{links = @($links)}
+}
 function Test-RecipeTimeout($Exception) {
     # A call that ran out of time: an HttpClient timeout surfaces as a cancelled task or a TimeoutException, inner or outer.
     for ($e = $Exception; $e; $e = $e.InnerException) {
@@ -204,8 +223,9 @@ function Read-RecipeRows {
         'sql' { return , (Invoke-RecipeSqlRows $Binding $Context $Run.cap) }
         'dwapi' {
             if ($Binding.handler -eq 'dwapi-sign-in') { return , (Invoke-RecipeSignIn $Binding $Context) }
-            if ($Binding.handler -notin @('dwapi-get', 'dwapi-signed-in-get')) { throw (New-RecipeFault "Delivery handler $($Binding.handler) is not a row read.") }
-            Invoke-RecipeDeliveryGet $Binding $Context $Run.registry
+            if ($Binding.handler -eq 'storefront-links') { Invoke-RecipeStorefrontLinks $Binding $Context }
+            elseif ($Binding.handler -notin @('dwapi-get', 'dwapi-signed-in-get')) { throw (New-RecipeFault "Delivery handler $($Binding.handler) is not a row read.") }
+            else { Invoke-RecipeDeliveryGet $Binding $Context $Run.registry }
         }
     } } catch {
         if (Test-RecipeTimeout $_.Exception) { throw (New-RecipeFailure "no answer from $($Binding.surface) $operation within its time limit") }

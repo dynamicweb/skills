@@ -2,7 +2,7 @@
 .SYNOPSIS
 WRITES: through Recipe.Write.ps1, and only with -Apply. Runs one retire step: every active row a read returns that the input does not name is set inactive, never deleted.
 .DESCRIPTION
-PowerShell 7. Owning reference: ../references/recipes.md. A retire step runs once per natural key (items that share a key are one set). It first resolves retire.named, what the input names for this set: nothing named refuses the item, so a retire can never empty a set. A step named in retire.requires that blocked an item refuses it too, because then what the input names is not known by id. The read (retire.binding) returns the set; a row whose retire.active.field equals retire.active.value is active, and an active row whose member equals one of the values of any retire.keep rule stays. The rest is retired, each named by its identify members. More than retire.max rows refuses the item. Without -Apply each row reports WOULD-RETIRE and fails with where it is. With -Apply each is written through the first eligible update binding, whose arguments read the row as {row.<member>}, and read back: the read-back must no longer return the row as active. Nothing to retire is UNCHANGED.
+PowerShell 7. Owning reference: ../references/recipes.md. A retire step runs once per natural key (items that share a key are one set). It first resolves retire.named, what the input names for this set: nothing named refuses the item, so a retire can never empty a set. A step named in retire.requires that blocked an item refuses it too, because then what the input names is not known by id. The read (retire.binding) returns the set; a row whose retire.active.field equals retire.active.value is active, and an active row stays when any retire.keep rule holds: its member equals one of the rule's values, and so does the member of each condition in the rule's also. The rest is retired, each named by its identify members. More than retire.max rows refuses the item. Without -Apply each row reports WOULD-RETIRE and fails with where it is. With -Apply each is written through the first eligible update binding, whose arguments read the row as {row.<member>}, and read back: the read-back must no longer return the row as active. Nothing to retire is UNCHANGED.
 .EXAMPLE
 . ./Recipe.Retire.ps1
 #>
@@ -14,10 +14,12 @@ function Get-RecipeRetireValues {
     return , @(foreach ($v in @($raw)) { if ($null -ne $v -and -not [string]::IsNullOrWhiteSpace([string]$v)) { $v } })
 }
 function Test-RecipeRetireKept {
+    # Any rule keeps the row; a rule holds when every one of its conditions does (a rule with also: the paragraph's row
+    # is one the input keeps and its sort is one the input names).
     param($Row, [object[]]$Rules)
     foreach ($rule in $Rules) {
-        $field = Get-RecipeValue $Row $rule.field
-        if ($field.found -and @($rule.values | Where-Object { Test-RecipeEqual $field.value $_ }).Count) { return $true }
+        $held = @($rule | Where-Object { $field = Get-RecipeValue $Row $_.field; $field.found -and @($_.values | Where-Object { Test-RecipeEqual $field.value $_ }).Count })
+        if ($held.Count -eq @($rule).Count) { return $true }
     }
     return $false
 }
@@ -42,7 +44,7 @@ function Invoke-RecipeRetireStep {
                 $blocked = @($Run.results[$stepId].Values | Where-Object { $_.state -eq 'BLOCKED' }).Count
                 if ($blocked) { throw (New-RecipeFault "refused: step '$stepId' blocked $blocked item(s), so what the input names is not known by id; nothing is retired") }
             }
-            $rules = @(foreach ($rule in @($retire.keep)) { @{field = $rule.field; values = (Get-RecipeRetireValues $rule.values $context)} })
+            $rules = @(foreach ($rule in @($retire.keep)) { , @(foreach ($c in @($rule) + @($rule.also | Where-Object { $_ })) { @{field = $c.field; values = (Get-RecipeRetireValues $c.values $context)} }) })
             $operation = [string]$retire.binding.operation
             $rows = Read-RecipeRows $retire.binding $context $Run
             $active = @($rows | Where-Object { $m = Get-RecipeValue $_ $retire.active.field; $m.found -and (Test-RecipeEqual $m.value $retire.active.value) })

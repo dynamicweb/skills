@@ -403,7 +403,15 @@ def validate_recipes(repo: Path) -> list[str]:
             if isinstance(retire, dict):
                 check_binding(retire.get("binding") or {}, "read", f"step {sid} retire", file, error, registry, tools, sql_jobs)
                 check_tokens({"arguments": (retire.get("binding") or {}).get("arguments"), "match": (retire.get("binding") or {}).get("match"),
-                              "named": retire.get("named"), "keep": [k.get("values") for k in retire.get("keep") or []]}, "retire")
+                              "named": retire.get("named"), "keep": [c.get("values") for k in retire.get("keep") or [] for c in [k] + (k.get("also") or [])]}, "retire")
+            conflict = (step.get("find") or {}).get("conflict") or {}
+            for b in conflict.get("bindings", []) + (conflict.get("adopt") or {}).get("locate", []):
+                check_binding(b, "read", f"step {sid} find.conflict", file, error, registry, tools, sql_jobs)
+                check_tokens({k: b.get(k) for k in ("arguments", "match", "compare")}, "find.conflict")
+            for b in (conflict.get("adopt") or {}).get("bindings", []):
+                # An adopt read reads the object its locate found as {found.<member>}.
+                check_binding(b, "read", f"step {sid} find.conflict.adopt", file, error, registry, tools, sql_jobs)
+                check_tokens({k: b.get(k) for k in ("arguments", "match", "compare")}, "find.conflict.adopt", allow_found=True)
             for b in (step.get("find") or {}).get("bindings", []) + (step.get("find") or {}).get("delivered", []):
                 check_binding(b, "read", f"step {sid} find", file, error, registry, tools, sql_jobs)
                 # A sign-in find reads with the password the input names by reference; any other find never sees a secret.
@@ -500,6 +508,10 @@ def all_bindings(doc):
     for step in doc.get("steps") or []:
         yield from (step.get("find") or {}).get("bindings", [])
         yield from (step.get("find") or {}).get("delivered", [])
+        conflict = (step.get("find") or {}).get("conflict") or {}
+        yield from conflict.get("bindings", [])
+        yield from (conflict.get("adopt") or {}).get("locate", [])
+        yield from (conflict.get("adopt") or {}).get("bindings", [])
         for b in step.get("bindings", []):
             yield b
             if b.get("readBack"):
@@ -710,7 +722,8 @@ def check_binding(b, kind, where, file, error, registry, tools, sql_jobs):
         error(file, f"{where}: Management API {operation} is not on adminReadQueries")
     if surface == "dwapi":
         handler = b.get("handler")
-        routes = {"dwapi-get": registry.get("dwapiReadRoutes", []), "dwapi-signed-in-get": registry.get("recipeSignedInReadRoutes", [])}.get(handler, registry.get("dwapiSignInRoutes", []))
+        routes = {"dwapi-get": registry.get("dwapiReadRoutes", []), "dwapi-signed-in-get": registry.get("recipeSignedInReadRoutes", []),
+                  "storefront-links": registry.get("recipeStorefrontRegions", [])}.get(handler, registry.get("dwapiSignInRoutes", []))
         if operation not in routes:
             error(file, f"{where}: delivery route {operation} is not on the allowlist for {handler}")
         if handler == "dwapi-persona-sign-in" and (b.get("arguments") or {}).get("readAs") not in registry.get("dwapiSignedInReadRoutes", []):
