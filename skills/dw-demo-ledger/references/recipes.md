@@ -394,6 +394,7 @@ storefront list needs, where a build after the catalogue would be built again. S
 | `-PayDebts` | With `-Apply`, pay every debt of the selected recipes in pass 2 even when nothing changed: the host primitives (index build, assortment build, flush, recycle) on their own, `-Only pim.identifiers -PayDebts -Apply` |
 | `-LayerDelivered <sections>` | Sections a layer already delivered: their recipes run verify-only in pass 1 even with `-Apply` (unless the recipe declares `layerDelivered: apply`). Not needed to avoid a second copy (each recipe recognises a delivery itself); use it to leave a delivered section untouched altogether, such as an MCP-only run that cannot read a layer's categories |
 | `-McpOnly`, `-AllowSql -SqlServer -Database`, `-SolutionPath`, `-LedgerBuildFile -Manifest`, connection | Passed to every recipe run, as for one recipe |
+| `-RunBy <label>` | Who ran the set (a delegate passes its model), else `DW_RECIPE_RUN_BY`: printed as `run by: <label>` under `SUMMARY` and as `runBy` in the report; absent, `run by: not stated` |
 
 Before anything runs, the set refuses a de-brand whose forbidden text another section of the
 input holds: the build would write it, the de-brand replace it, and the next apply write it back.

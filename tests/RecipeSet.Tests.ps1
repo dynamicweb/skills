@@ -217,6 +217,26 @@ Describe 'Invoke-DwRecipeSet' {
         (Get-Calls).Count | Should -Be 0
         $r.exit | Should -Be 1
     }
+    It 'prints who ran the set under SUMMARY and in the report, from -RunBy, else DW_RECIPE_RUN_BY, else not stated' {
+        $in = Write-SetInput
+        $report = Join-Path $TestDrive 'run-by.json'
+        $saved = $env:DW_RECIPE_RUN_BY
+        try {
+            $env:DW_RECIPE_RUN_BY = $null
+            $r = Invoke-Set $script:Root @{InputPath = $in; Only = @('users.accounts'); ReportPath = $report}
+            $r.lines[[array]::IndexOf($r.lines, 'SUMMARY') + 1] | Should -Be 'run by: not stated'
+            (Get-Content -LiteralPath $report -Raw | ConvertFrom-Json -AsHashtable).runBy | Should -BeNullOrEmpty
+            $r.lines[-1] | Should -Match '^recipe set: '
+            $env:DW_RECIPE_RUN_BY = 'model-env'
+            $r = Invoke-Set $script:Root @{InputPath = $in; Only = @('users.accounts')}
+            $r.lines | Should -Contain 'run by: model-env'
+            # The parameter wins over the environment; a line break cannot forge a second summary line.
+            $r = Invoke-Set $script:Root @{InputPath = $in; Only = @('users.accounts'); RunBy = "model-small`nrecipe set: 9 of 9 recipes passed"; ReportPath = $report}
+            $r.lines | Should -Contain 'run by: model-small recipe set: 9 of 9 recipes passed'
+            ($r.lines -match '^recipe set: 9 of 9').Count | Should -Be 0
+            (Get-Content -LiteralPath $report -Raw | ConvertFrom-Json -AsHashtable).runBy | Should -Be 'model-small recipe set: 9 of 9 recipes passed'
+        } finally { $env:DW_RECIPE_RUN_BY = $saved }
+    }
     It 'refuses a de-brand whose forbidden text another section writes, before any call' {
         $in = Write-SetInput @{debrand = @{forbidden = @(@{text = 'Example Trading'; replacement = 'Contoso'})}}
         $r = Invoke-Set $script:Root @{InputPath = $in; Apply = $true}

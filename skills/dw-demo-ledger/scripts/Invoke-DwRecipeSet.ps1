@@ -5,7 +5,7 @@ WRITES: every recipe the customer data file has a section for, only with -Apply;
 PowerShell 7. Owning reference: ../references/recipes.md ("Running a whole build"). One command for a whole build: it reads one customer data file, selects every recipe whose input section the file holds (assets/recipes, minus -Skip, or only -Only), orders them by their dependsOn and runsLast declarations (the order references/recipe-index.md prints), and runs each through Invoke-DwRecipe.ps1.
 Without -Apply each recipe runs verify-only once, in order. With -Apply there are three passes: (1) apply every recipe in order with its debts deferred and no probes; a debt that a later recipe names in dependsOn.debtsPaid is paid before that recipe runs; (2) pay the owed debts once, deduplicated across recipes, in the order assortments, flushes, index builds, recycle, each through the recipe that owes it (Invoke-DwRecipe.ps1 -Debts Only); (3) verify every recipe again without -Apply, so the steps report UNCHANGED and the probes decide. -PayDebts pays the debts of the selected recipes in pass 2 even when nothing changed: the host primitives (index build, assortment build, flush, recycle) on their own.
 Before anything runs, a de-brand section's forbidden text found in another section of the input is refused: the next apply would write it back and the build would never settle.
-Output: each recipe's own lines under a "== <recipe> <pass>" header, then one summary table and last "recipe set: n of m recipes passed". Exit 0 only when every selected recipe passed its last pass and every debt was paid. Connection and secrets as Invoke-DwRecipe.ps1 (DW_BASE_URL, DW_MCP_TOKEN, DW_API_TOKEN, DW_RECIPE_SECRETS, DW_PERSONA_CREDENTIALS); no token or secret is printed or written to the report.
+Output: each recipe's own lines under a "== <recipe> <pass>" header, then "SUMMARY", a "run by: <label>" line (-RunBy, else DW_RECIPE_RUN_BY, else "not stated"), one summary table and last "recipe set: n of m recipes passed". Exit 0 only when every selected recipe passed its last pass and every debt was paid. Connection and secrets as Invoke-DwRecipe.ps1 (DW_BASE_URL, DW_MCP_TOKEN, DW_API_TOKEN, DW_RECIPE_SECRETS, DW_PERSONA_CREDENTIALS); no token or secret is printed or written to the report.
 .PARAMETER InputPath
 Customer data file matching assets/recipe-input.schema.json.
 .PARAMETER Apply
@@ -42,10 +42,12 @@ Local solution root; lets a recycle debt run Restart-DwHost.ps1.
 Optional JSON report: per recipe and pass the counts and result, the debts, no values.
 .PARAMETER AllowSelfSignedCertificate
 Explicit TLS opt-in for a development endpoint that is not loopback.
+.PARAMETER RunBy
+Who ran the set, as the hand-in names it (the model a delegated run is on); otherwise DW_RECIPE_RUN_BY. Printed in the summary and the report as runBy; absent, the summary says "run by: not stated". One line.
 .EXAMPLE
 pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json
 .EXAMPLE
-pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json -Apply -ReportPath ./recipe-set-report.json
+pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json -Apply -ReportPath ./recipe-set-report.json -RunBy <model>
 .EXAMPLE
 pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.json -Only pim.identifiers -PayDebts -Apply
 #>
@@ -63,7 +65,8 @@ param(
     [string]$LedgerBuildFile, [string]$Manifest,
     [string]$SolutionPath,
     [string]$ReportPath,
-    [switch]$AllowSelfSignedCertificate
+    [switch]$AllowSelfSignedCertificate,
+    [string]$RunBy
 )
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Core.ps1')
@@ -71,6 +74,9 @@ $ErrorActionPreference = 'Stop'
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $Only = Split-LedgerList $Only; $Skip = Split-LedgerList $Skip; $LayerDelivered = Split-LedgerList $LayerDelivered
 $runner = Join-Path $PSScriptRoot 'Invoke-DwRecipe.ps1'
+# Who ran the set: one line, so a label cannot forge a summary row. Absent, the summary says so.
+if (-not $RunBy) { $RunBy = $env:DW_RECIPE_RUN_BY }
+$RunBy = if ($RunBy) { ($RunBy -replace '\p{Cc}+', ' ').Trim() } else { '' }
 
 function Get-RecipeSetOrder {
     # Dependencies first, ties by id, runsLast at the end: the same order validate_recipes.py prints in recipe-index.md.
@@ -256,6 +262,7 @@ try {
 # The summary: one row per recipe (steps of the apply pass, checks of the last pass), then the debts.
 Write-SetLine ''
 Write-SetLine 'SUMMARY'
+Write-SetLine "run by: $(if ($RunBy) { $RunBy } else { 'not stated' })"
 foreach ($row in $rows.Values) { if (-not $row.result) { $row.result = 'NOT RUN' } }
 foreach ($id in $skipped.Keys) { $rows[$id] = $skipped[$id] }
 $table = foreach ($row in $rows.Values) {
@@ -279,7 +286,7 @@ $debtsOk = -not @($debtRows | Where-Object { $_.result -in @('FAIL', 'OPEN') }).
 $ok = -not $fault -and $counted.Count -gt 0 -and $passedCount -eq $counted.Count -and $debtsOk
 Write-SetLine "recipe set: $passedCount of $($counted.Count) recipes passed$(if (-not $debtsOk) { '; a debt is not paid' })"
 if ($ReportPath) {
-    $report = [ordered]@{schema = 1; kind = 'recipe-set'; generatedAt = [DateTimeOffset]::UtcNow.ToString('o'); mode = $(if ($applied) { 'apply' } else { 'verify' })
+    $report = [ordered]@{schema = 1; kind = 'recipe-set'; generatedAt = [DateTimeOffset]::UtcNow.ToString('o'); mode = $(if ($applied) { 'apply' } else { 'verify' }); runBy = $(if ($RunBy) { $RunBy } else { $null })
         recipes = @($rows.Values | ForEach-Object { [ordered]@{recipe = $_.recipe; section = $_.section; result = $_.result; reason = $_.reason
                     passes = @(@($_.passes) | ForEach-Object { $p = [ordered]@{} + $_; $p.Remove('checks'); $p })} })
         debts = $debtRows.ToArray(); fault = $fault; passed = $passedCount; total = $counted.Count; result = $(if ($ok) { 'PASS' } else { 'FAIL' })}
