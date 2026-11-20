@@ -26,11 +26,28 @@
   "content.pages": {
     "pages": [
       {
+        "menuText": "Home",
+        "urlName": "home",
+        "itemType": "Swift-v2_Page",
+        "path": "/en-us/home",
+        "adopt": true,
+        "rows": [
+          {"sort": 1, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"},
+          {"sort": 2, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"}
+        ],
+        "paragraphs": [
+          {"row": 1, "column": 1, "sort": 1, "itemType": "Swift-v2_Poster", "template": "TextMiddleLeft.cshtml", "fields": {"Eyebrow": "<p class=\"dw-paragraph\">Tools for the trade</p>", "Title": "<h1 class=\"dw-h1\">Built for daily site work</h1>", "Text": "<p>Hand tools and fixings, in stock and ready to ship.</p>", "FirstButton": "", "SecondButton": ""}},
+          {"row": 2, "column": 1, "sort": 2, "itemType": "Swift-v2_Text", "template": "TextCenter.cshtml", "fields": {"Title": "<h2 class=\"dw-h2\">Who we serve</h2>", "Text": "<p>Contractors and installers who order every week.</p>", "FirstButton": "", "SecondButton": ""}}
+        ]
+      },
+      {
         "menuText": "About us",
         "urlName": "about-us",
         "itemType": "Swift-v2_Page",
         "sort": 100,
         "public": true,
+        "path": "/en-us/about-us",
+        "footer": "About the shop",
         "rows": [
           {"sort": 1, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"}
         ],

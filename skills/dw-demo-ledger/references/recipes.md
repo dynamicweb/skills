@@ -199,6 +199,14 @@ paragraphs and grid rows the input does not name come off the page (`adopt-parag
 their row and inactive, because the platform keeps every paragraph in a row active; `adopt-rows`:
 inactive), each reported by id (`STEP adopt-rows RETIRED Delivery@141/4/2Columns_8-4`). A page the
 input names with `adopt` and no paragraphs is refused, so adoption never strips a page bare.
+The home page is such an item: its menu text (`Home` on the sample base), its `path`, `adopt: true`,
+and the rows and paragraphs of its hero and intro. The page is found by menu text, the input's
+rows and paragraphs are written onto it, and every stock row (feature copy, counters, sample photos)
+is retired; a paragraph the input names at the sort it is stored at is reused, so its fields the
+input does not name (the hero image) stay. A file with no home copy leaves the home page exactly as
+delivered: content.pages touches only the pages the input names. An adopted page keeps its own
+browser title (on the sample base the home page's is the website's), so `page-renders` skips it and
+`page-path` proves it answers at its path.
 A step with an empty `bindings` list is a lookup: it finds an object another function owns (the
 header page a website selects) and produces values for later steps, and never writes. An absent
 object is WOULD-CREATE in a verify run and BLOCKED with apply, so its dependants stop too.

@@ -1641,3 +1641,70 @@ Describe 'storefront-links: the links of one region of a rendered storefront pag
         { Invoke-RecipeStorefrontLinks $binding @{item = @{path = 'https://elsewhere.invalid/'}} } | Should -Throw '*reads a site path*'
     }
 }
+
+Describe 'Invoke-DwRecipe on content.pages: the home page copy' {
+    BeforeEach {
+        $env:DW_MCP_TOKEN = 'stub-mcp-token-0000'
+        Remove-Item Env:DW_API_TOKEN -ErrorAction SilentlyContinue
+        $script:Root = New-RecipeSandbox
+        function New-HomeStub {
+            # A sample base home page: the hero poster row and a counters row of three stock paragraphs. Its browser title is
+            # the website's, not its menu text, as on the sample base.
+            New-Stub
+            $s = $global:RecipeStub
+            foreach ($t in @('get_navigation_structure', 'get_pages_by_area_id')) { $s.tools[$t] = Get-Schema @('areaId') @('areaId') }
+            $s.tools.get_pages_by_ids = Get-Schema @('pageIds') @('pageIds')
+            $s.pages.Add(@{id = 40; parentPageId = 0; menuText = 'Home'; urlName = 'home'; itemType = 'Swift-v2_Page'; active = $true})
+            $s.fields['page40'] = [ordered]@{Title = 'Home'}
+            $s.rows.Add(@{id = 41; pageId = 40; sort = 1; definitionId = '1Column'; container = 'Grid'; active = $true})
+            $s.rows.Add(@{id = 42; pageId = 40; sort = 9; definitionId = '3Columns'; container = 'Grid'; active = $true})
+            $s.paragraphs.Add(@{id = 43; pageId = 40; gridRowId = 41; gridRowColumn = 1; sort = 18; itemType = 'Swift-v2_Poster'; active = $true})
+            foreach ($i in 1..3) { $s.paragraphs.Add(@{id = 43 + $i; pageId = 40; gridRowId = 42; gridRowColumn = $i; sort = 10 + $i; itemType = 'Swift-v2_Text'; active = $true}); $s.fields["para$(43 + $i)"] = [ordered]@{Title = "Stock counter $i"} }
+            $s.fields['para43'] = [ordered]@{Title = 'Stock hero'; Text = 'Stock text'; Image = '/Files/Images/stock.jpg'}
+            $inner = $s.mcp
+            $s.mcp = {
+                param($Tool, $Arguments)
+                $s = $global:RecipeStub
+                $ok = @{structuredContent = @{succeeded = 1; failed = 0; errors = @()}}
+                $set = { param($row, $m) foreach ($k in $m.Keys) { if ($k -ne 'id') { $row[$k] = $m[$k] } } }
+                switch ($Tool) {
+                    'fetch_frontend_page_html' { $r = & $inner $Tool $Arguments; if ($r.structuredContent.statusCode -eq 200) { $r.structuredContent.title = 'Example Store' }; return $r }
+                    'get_grid_rows_by_page_id' { return @{structuredContent = @{data = @($s.rows | Where-Object { $_.pageId -eq [int]$Arguments.pageId -and $_.active -ne $false })}} }
+                    'save_grid_rows' {
+                        foreach ($r in $Arguments.gridRows) {
+                            if ([int]$r.id -eq 0) { $s.nextId++; $s.rows.Add(@{id = $s.nextId; pageId = [int]$r.pageId; sort = $r.sort; definitionId = $r.definitionId; container = $r.container; active = $true}) }
+                            else { & $set @($s.rows | Where-Object { $_.id -eq [int]$r.id })[0] $r }
+                        }
+                        return $ok
+                    }
+                    'save_paragraphs' {
+                        $creates = @($Arguments.paragraphs | Where-Object { [int]$_.id -eq 0 })
+                        foreach ($p in @($Arguments.paragraphs | Where-Object { [int]$_.id -ne 0 })) { & $set @($s.paragraphs | Where-Object { $_.id -eq [int]$p.id })[0] $p }
+                        if ($creates.Count) { $null = & $inner $Tool @{paragraphs = $creates}; foreach ($p in $s.paragraphs) { if ($null -eq $p.active) { $p.active = $true } } }
+                        return $ok
+                    }
+                    default { return (& $inner $Tool $Arguments) }
+                }
+            }.GetNewClosure()
+        }
+    }
+    It 'writes the input hero and intro onto the home page, retires the stock counters, and does not hold the home page to its menu text as browser title' {
+        New-HomeStub
+        $homePage = @{menuText = 'Home'; urlName = 'home'; itemType = 'Swift-v2_Page'; path = '/en-us/home'; adopt = $true
+            rows = @(@{sort = 1; definitionId = '1Column'; container = 'Grid'; itemType = 'Swift-v2_Row'}, @{sort = 2; definitionId = '1Column'; container = 'Grid'; itemType = 'Swift-v2_Row'})
+            paragraphs = @(@{row = 1; column = 1; sort = 18; itemType = 'Swift-v2_Poster'; fields = @{Title = 'Built for daily work'; Text = '<p>Hero copy.</p>'}},
+                @{row = 2; column = 1; sort = 2; itemType = 'Swift-v2_Text'; fields = @{Title = 'Who we serve'; Text = '<p>Intro copy.</p>'; FirstButton = ''}})}
+        $in = Write-Input @{pages = @($homePage)} 'content.pages'
+        $a = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; Apply = $true}
+        $a.lines | Should -Contain 'STEP pages UNCHANGED Home'
+        @($a.lines -match '^STEP adopt-') | Should -Be @('STEP adopt-rows RETIRED Home@42/9/3Columns', 'STEP adopt-paragraphs RETIRED Home@44/Swift-v2_Text', 'STEP adopt-paragraphs RETIRED Home@45/Swift-v2_Text', 'STEP adopt-paragraphs RETIRED Home@46/Swift-v2_Text')
+        $s = $global:RecipeStub
+        # The hero paragraph is reused: the input's copy on it, the stock image it does not name kept.
+        $s.fields['para43'].Title | Should -Be 'Built for daily work'
+        $s.fields['para43'].Image | Should -Be '/Files/Images/stock.jpg'
+        @($s.paragraphs | Where-Object { $_.active -ne $false -and $_.gridRowId -ne 0 }).Count | Should -Be 2
+        ($a.lines -match '^(PASS|FAIL|OPEN) probe/page-renders').Count | Should -Be 0
+        $a.lines | Should -Contain 'PASS probe/page-path'
+        $a.exit | Should -Be 0
+    }
+}

@@ -57,6 +57,7 @@ What every branded build writes goes in the data file, so step 1 writes it:
 | Colours, fonts, logo, favicon | `brand` (`ConvertFrom-DwBrandKit.ps1`) |
 | Pages and their copy, standard pages too (restate the page, row and paragraph to change its copy) | `content.pages` |
 | A page whose path a base page already holds (its stock rows retired) | `content.pages.pages[].adopt` with its `path`, `rows` and `paragraphs` |
+| The home page's hero and intro, the sample counters and copy gone | a `content.pages` item for the home page (`Home`, its path, `adopt: true`, the hero and intro rows and paragraphs) |
 | A page linked from a footer column | `content.pages.pages[].footer` (the column folder's menu text) |
 | A former name left in stock content | `debrand` |
 | Accounts, personas, grants, passwords | `users.accounts` (passwords: `users.frontend-sign-in`) |
