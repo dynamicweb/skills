@@ -88,7 +88,8 @@ pwsh -NoProfile -File scripts/Invoke-DwRecipeSet.ps1 -InputPath ./recipe-input.j
 | [Invoke-DwRecipe.ps1](scripts/Invoke-DwRecipe.ps1) | Reads target; with -Apply writes the recipe's objects and pays its debts | Runs one recipe: find, apply, read back, debts, probes, ledger checks |
 | [Invoke-DwRecipeSet.ps1](scripts/Invoke-DwRecipeSet.ps1) | Reads target; with -Apply writes every selected recipe's objects and pays the debts once | A whole build from one input file: select, order, apply, pay, verify, one summary |
 | [Find-DwRecipe.ps1](scripts/Find-DwRecipe.ps1) | Reads recipes | Recipes for a function or area, their modes and proven state |
-| [Recipe.Core.ps1](scripts/Recipe.Core.ps1) | Definitions only | Paths, tokens, natural-key matching and binding selection |
+| [Recipe.Core.ps1](scripts/Recipe.Core.ps1) | Definitions only | Paths and tokens |
+| [Recipe.Match.ps1](scripts/Recipe.Match.ps1) | Definitions only | Typed comparison, natural-key matching, skipWhen conditions and binding selection |
 | [Recipe.Transport.ps1](scripts/Recipe.Transport.ps1) | Reads target when called | Allowlisted MCP, Management API, delivery and guarded local SQL reads |
 | [Recipe.Write.ps1](scripts/Recipe.Write.ps1) | Writes when called with -Apply | One allowlisted MCP or Management API write |
 | [Recipe.Steps.ps1](scripts/Recipe.Steps.ps1) | Writes through Recipe.Write.ps1 | Step engine and the STEP and check lines |

@@ -69,7 +69,7 @@ param(
     [switch]$AllowSelfSignedCertificate
 )
 $ErrorActionPreference = 'Stop'
-foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Prune.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
+foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Match.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Prune.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $recipeId = $Recipe
 $run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}; deferred = @()}

@@ -10,6 +10,7 @@ BeforeAll {
     $script:Source = Join-Path $script:RepoRoot 'skills/dw-demo-ledger'
     . (Join-Path $script:Source 'scripts/Ledger.Core.ps1')
     . (Join-Path $script:Source 'scripts/Recipe.Core.ps1')
+    . (Join-Path $script:Source 'scripts/Recipe.Match.ps1')
 
     function New-RecipeSandbox {
         # A copy of the skill's scripts and assets (no release snapshots) with stub transport and child scripts.
