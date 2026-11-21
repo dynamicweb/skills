@@ -19,6 +19,7 @@ and follow it by calling the named tools with the stated arguments, and
 - [Modes](#modes)
 - [Following a recipe by hand](#following-a-recipe-by-hand)
 - [Running a recipe](#running-a-recipe)
+  - [Connection](#connection)
 - [Running a whole build](#running-a-whole-build)
 - [Output contract](#output-contract)
 - [Adding or promoting a recipe](#adding-or-promoting-a-recipe)
@@ -134,7 +135,7 @@ String values in arguments, match, compare, expect and parameters may hold token
 | `{step.<id>[<path>,<path>].<field>}` | The same for the key built from those paths, joined with `/` |
 | `{found.<path>}` | The row the find matched (update arguments only) |
 | `{scope}`, `{row.<path>}` | In a prune step: the owner being read, and the row being deleted |
-| `{build.areaId}` | `areaId`, `defaultLanguage`, `pimShop` from the ledger build file, else the input's `build` |
+| `{build.areaId}` | `areaId`, `defaultLanguage`, `pimShop` from the ledger build file, else the input's `build`, else the site when it has exactly one candidate ("Connection") |
 | `{secret.<path>}` | The value of the reference key at `<path>` in `DW_RECIPE_SECRETS`; write and read-back arguments only |
 | `{base64:<token>}`, `{bytes:<token>}`, `{basename:<token>}` | The content (base64), size or file name of the file the value names, relative to the input file; a rooted path or one outside that folder is refused |
 
@@ -352,11 +353,51 @@ and points every file at `/Files/Images/<assetFolder>`:
 pwsh -NoProfile -File scripts/ConvertFrom-DwBrandKit.ps1 -KitPath ./brand-kit/acme/swift2 -OutPath ./recipe-input.json -RenderCheck /en-us/home, /en-us/shop
 ```
 
-Set `DW_BASE_URL` and `DW_MCP_TOKEN` and/or `DW_API_TOKEN`. `DW_RECIPE_SECRETS` is a JSON object
-from the input's reference keys to their values (`{"buyer": "..."}`); `DW_PERSONA_CREDENTIALS` is the
-ledger's persona list. `-McpOnly` restricts the run to MCP as the in-product agent would;
+`DW_RECIPE_SECRETS` is a JSON object from the input's reference keys to their values
+(`{"buyer": "..."}`); `DW_PERSONA_CREDENTIALS` is the ledger's persona list. Both come from the
+environment only. `-McpOnly` restricts the run to MCP as the in-product agent would;
 `-AllowSql -SqlServer <local> -Database <name>` permits the local SQL reads. No token or secret is
 printed or written to the report.
+
+### Connection
+
+Run from the demo folder and the runner finds the site itself. Each value comes from the first of:
+
+1. the parameter (`-BaseUrl`, `-McpToken`, `-ApiToken`);
+2. the environment (`DW_BASE_URL`, `DW_MCP_TOKEN`, `DW_API_TOKEN`);
+3. the demo folder (`-SiteFolder <folder>`, default the current directory):
+   - `.mcp.json`, the project MCP config: the server whose `url` ends in `/admin/mcp` gives the
+     base URL and, from its `headers.Authorization` (`Bearer <key>`), the MCP key. A placeholder
+     bearer (`<MCP_API_KEY>`) is not a key. When the file lists several such servers, the one
+     `demo-host.json` names (`mcp.name` or `mcp.url`) is used; otherwise the run stops and lists
+     them;
+   - `demo-host.json`, an optional machine-local host facts file a hosting tool may write beside
+     `.mcp.json` (never committed): `url` is the site URL (used when `.mcp.json` gives none), and
+     `keys` names where the keys are: `keys.resultFile` (a JSON file, relative to the folder or
+     absolute), `keys.adminKeyField` (the field holding the Management API key) and
+     `keys.mcpKeyField` (the field holding the MCP key, used when `.mcp.json` has none):
+
+     ```json
+     {"url": "https://<host>", "mcp": {"name": "<server name in .mcp.json>"},
+      "keys": {"resultFile": "<keys file>.json", "adminKeyField": "<field>", "mcpKeyField": "<field>"}}
+     ```
+
+4. for the base URL only, `Dynamicweb.Host.Suite/Properties/launchSettings.json` under
+   `-SolutionPath` or the current directory.
+
+Each value read from a file prints one `NOTE connection: <what> from <file>` line, never the value.
+A credential that is still missing prints a NOTE naming both ways to supply it (the variable, or
+running from the folder that holds `.mcp.json`), and the steps that need it are BLOCKED with the
+same words. `Invoke-DwRecipeSet.ps1` resolves the connection once and hands it to every recipe run.
+
+**`build` from the site.** A recipe that reads `{build.areaId}`, `{build.defaultLanguage}` or
+`{build.pimShop}` without a default, on an input whose `build` section (or ledger build file)
+leaves it out, takes it from the site over MCP when there is exactly one candidate: the one website
+that is not a language layer (`get_areas`, no `masterAreaId`), the one default language
+(`get_languages`, `isDefault`), the one DataStructure shop (`get_shops`, `usageType`). A NOTE line
+names the value it took. Several candidates, none, or no MCP connection stop the run before any
+step (the set: before any recipe), with one message listing the candidates and the member to add
+under `build`. Add `build` to the data file to choose; it always wins.
 
 ## Running a whole build
 
@@ -393,7 +434,8 @@ storefront list needs, where a build after the catalogue would be built again. S
 | `-Only <ids>` / `-Skip <ids>` | Run only, or leave out, these recipes. A dependency left out is a NOTE: its objects must already be on the site |
 | `-PayDebts` | With `-Apply`, pay every debt of the selected recipes in pass 2 even when nothing changed: the host primitives (index build, assortment build, flush, recycle) on their own, `-Only pim.identifiers -PayDebts -Apply` |
 | `-LayerDelivered <sections>` | Sections a layer already delivered: their recipes run verify-only in pass 1 even with `-Apply` (unless the recipe declares `layerDelivered: apply`). Not needed to avoid a second copy (each recipe recognises a delivery itself); use it to leave a delivered section untouched altogether, such as an MCP-only run that cannot read a layer's categories |
-| `-McpOnly`, `-AllowSql -SqlServer -Database`, `-SolutionPath`, `-LedgerBuildFile -Manifest`, connection | Passed to every recipe run, as for one recipe |
+| `-McpOnly`, `-AllowSql -SqlServer -Database`, `-SolutionPath`, `-LedgerBuildFile -Manifest` | Passed to every recipe run, as for one recipe |
+| `-SiteFolder <folder>` | The demo folder holding the site's `.mcp.json` (and optional `demo-host.json`); default the current directory. The connection ("Connection") and any `build` member read from the site are resolved once, before any recipe runs, and handed to every recipe run; a parameter or `DW_*` variable wins |
 | `-RunBy <label>` | Who ran the set (a delegate passes its model), else `DW_RECIPE_RUN_BY`: printed as `run by: <label>` under `SUMMARY` and as `runBy` in the report; absent, `run by: not stated` |
 
 Before anything runs, the set refuses a de-brand whose forbidden text another section of the
