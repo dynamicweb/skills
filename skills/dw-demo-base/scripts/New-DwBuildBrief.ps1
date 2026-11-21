@@ -78,7 +78,8 @@ function Get-DwBriefLines {
         "- The set reads the site connection itself from the folder that holds the site's ``.mcp.json`` (and ``demo-host.json`` when there is one): the delegate runs it there or passes ``-SiteFolder <that folder>``. Only ``DW_RECIPE_SECRETS`` and ``DW_PERSONA_CREDENTIALS``, when this session has them, must reach the delegate: start its commands from this shell's environment. They have no file form; never paste a value into a brief.",
         "- Make no write to the site until the delegate's apply has ended. Meanwhile read the brief's custom work, the owning skills and the site's templates.")
     if ($down) { $lines += "- Routine custom pieces may go to a sub-agent on ``$Mid``, named in the call; you still own and check them." }
-    if ($up) { $lines += "- The hardest custom pieces$pieces may go up to a sub-agent on ``$Top``, named in the call. Say in the hand-in which pieces went up." }
+    if ($up) { $lines += "- The hardest custom pieces$pieces may go up to a sub-agent on ``$Top``, named in the call. Say in the hand-in which pieces went up. A piece you would otherwise leave unbuilt goes up; it is not left out." }
+    $lines += "- The recipe set builds the data foundation, not the demo. The hand-in is due when every moment of the brief is built and checked on the site, or when you have tried a moment and can say what stopped it. Handing in with moments not attempted is an unfinished build."
     $handIn = "- The hand-in names the orchestrator ($self), the recipe set's model (``$Small``; its summary prints ``run by: $Small``) and the model that built the rest"
     if ($up) { $handIn += ", and which pieces went up to ``$Top``" }
     $lines += ($handIn + '.')
