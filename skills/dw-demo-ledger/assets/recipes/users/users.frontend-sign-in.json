@@ -1,0 +1,73 @@
+{
+  "schema": 1,
+  "id": "users.frontend-sign-in",
+  "name": "Every persona signs in with the password the input names, also a user a layer copy delivered",
+  "functions": ["users.frontend-sign-in"],
+  "skill": "dw-users-permissions",
+  "inputs": {"section": "users.accounts", "required": ["groups"]},
+  "dependsOn": [
+    {"recipe": "users.accounts", "why": "The users are that recipe's objects; this one only makes each sign in with its own password, which create_users sets only on create."}
+  ],
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "No MCP tool sets a password on an existing user: update_users has no password member (0.6.6 refuses one), so the password step needs the Management API command UserSetPassword."},
+    "hosted": {"usable": true, "reason": "The sign-in is a delivery API read and UserSetPassword a Management API command; nothing needs SQL or a recycle."},
+    "local": {"usable": true},
+    "layerDelivered": "apply"
+  },
+  "steps": [
+    {
+      "id": "users",
+      "title": "Find each user that has a password reference",
+      "forEach": "groups[*].users[*]",
+      "key": "{item.userName}",
+      "skipWhen": {"path": "item.passwordRef", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-usernames", "surface": "mcp", "status": "implemented", "operation": "get_users_by_usernames", "arguments": {"userNames": ["{item.userName}"]}, "rows": "data", "match": {"userName": "{item.userName}"}, "produces": {"id": "id"}, "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ]},
+      "bindings": [],
+      "trap": "A user name can exist twice (one person on two accounts, a layer copy's second profile): two matches block the item rather than set a password on the wrong one.",
+      "source": "skills/dw-users-permissions/references/user-group-operations.md"
+    },
+    {
+      "id": "password",
+      "title": "Set the password a user does not sign in with",
+      "forEach": "groups[*].users[*]",
+      "key": "{item.userName}",
+      "skipWhen": {"path": "item.passwordRef", "exists": false},
+      "find": {"bindings": [
+        {"id": "dwapi-sign-in", "surface": "dwapi", "status": "implemented", "handler": "dwapi-sign-in", "operation": "users/authenticate", "arguments": {"username": "{item.userName}", "password": "{secret.item.passwordRef}"}, "rows": "$", "match": {"signedIn": true}, "source": "skills/dw-data-access/references/recipes-users.md"}
+      ]},
+      "bindings": [
+        {"id": "admin-set-password", "surface": "admin-api", "status": "implemented", "source": "skills/dw-data-access/references/recipes-users.md",
+          "create": {"operation": "UserSetPassword", "arguments": {"model": {"userId": "{step.users.id}", "password": "{secret.item.passwordRef}"}}},
+          "readBack": {"surface": "dwapi", "status": "implemented", "handler": "dwapi-sign-in", "operation": "users/authenticate", "arguments": {"username": "{item.userName}", "password": "{secret.item.passwordRef}"}, "rows": "$", "match": {"signedIn": true}, "source": "skills/dw-data-access/references/recipes-users.md"}},
+        {"id": "mcp-password", "surface": "mcp", "status": "planned", "reason": "No MCP tool sets a password on an existing user: create_users takes one on create only and update_users has no password member (MCP 0.6.6 answers unknown member users[0].password).", "source": "skills/dw-users-permissions/references/user-group-operations.md"}
+      ],
+      "trap": "The find is a sign-in with the input's password: a user who signs in is left alone, so a run never rotates a working password. UserSetPassword keys on userId, not id, and the Management API UserSave accepts a password and drops it. Never copy a hash through SQL, and never delete and recreate the user: its id changes and every order, price and grant that names it breaks.",
+      "source": "skills/dw-data-access/references/recipes-users.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["users.frontend-sign-in.persona-signs-in"],
+    "probes": [
+      {
+        "id": "persona-sign-in",
+        "title": "Each user with a password signs in through the delivery API",
+        "forEach": "groups[*].users[*]",
+        "skipWhen": {"path": "item.passwordRef", "exists": false},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-sign-in", "operation": "users/authenticate", "arguments": {"username": "{item.userName}", "password": "{secret.item.passwordRef}"}, "rows": "$", "assert": {"kind": "equals", "path": "signedIn", "value": true}, "source": "skills/dw-data-access/references/recipes-users.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "on a site built from empty by the recipe set, with one more user that existed without the input's password (as a layer copy ships it): p1-verify reported that user WOULD-CREATE and the two personas users.accounts created UNCHANGED (5 of 7, the sign-in probe failing on that user), p2-apply set its password with UserSetPassword and read it back as a sign-in (7 of 7), p3-verify and p4-apply-again 7 of 7 with nothing written. update_users with a password member was refused on 0.6.6 (unknown member users[0].password)."}
+  ],
+  "traps": [
+    "A layer copy ships its personas without a password; this recipe gives each the password the input names by reference, after users.accounts and with no debt: authentication reads the stored password on every attempt.",
+    "A recipe set on a blank site creates the users with their password in users.accounts, so this recipe finds every persona signing in and writes nothing."
+  ]
+}

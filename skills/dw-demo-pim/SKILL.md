@@ -38,6 +38,19 @@ orchestrator abstraction (native command set and the standalone harness) is owne
 
 This SKILL.md is an orchestrator only. Each topic links to a `references/<topic>.md` that owns the verbatim recipe and gotchas.
 
+## Recipes first
+
+Three PIM functions this skill teaches by hand have proven recipes; run them from the customer data
+file with `Invoke-DwRecipeSet.ps1` ([dw-demo-base "Build from the library"](../dw-demo-base/references/orchestrator.md#build-from-the-library)) before reaching
+for the references below, which stay the reference for hand work and for what a recipe leaves open
+([recipe index](../dw-demo-ledger/references/recipe-index.md)).
+
+| Recipe | Input | What it builds and proves | What stays by hand |
+|---|---|---|---|
+| `pim.data-models` | `catalogue` (`groups`, `pimFolder`) | A data-model folder; one category and data model per top group with its spec fields; a storefront display group and a completeness rule assigned to the model. Probes: each model exists once, the display group reaches the storefront | Not MCP-only: listing a category without fields needs the Management API |
+| `pim.identifiers` | `catalogue` (`shop`, `groups`, `products`) | Storefront groups in the assortment, products by number in their group and model, spec values, images with a default, stock; pays the assortment build, cache flushes and both product index builds. Probes: listed in its group, image served, a completeness figure, specs on the delivery API | Documents (no tool creates the asset category); variants and bundles |
+| `pim.workflow` | `pim.workflow` | The workflow, its states and transitions, attached to the named data models. Probe: the states and their transitions | Not MCP-only: creating and attaching the workflow are Management API commands; per-state role gating ([references/workflow.md](references/workflow.md)) |
+
 ## When to use this skill
 
 Trigger shapes, one per thematic reference (the "Where to find things" table below is the router):

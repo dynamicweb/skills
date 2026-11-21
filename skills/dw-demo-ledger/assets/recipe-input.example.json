@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "build": {"areaId": 1},
+  "users.accounts": {
+    "groups": [
+      {
+        "name": "Example Trading",
+        "kind": "account",
+        "customerNumber": "C-1001",
+        "users": [
+          {"userName": "buyer@example.invalid", "name": "Example Buyer", "email": "buyer@example.invalid", "passwordRef": "buyer"}
+        ]
+      },
+      {
+        "name": "Sales representatives",
+        "kind": "staff",
+        "users": [
+          {"userName": "rep@example.invalid", "name": "Example Representative", "email": "rep@example.invalid", "passwordRef": "rep"}
+        ]
+      }
+    ],
+    "impersonation": [
+      {"impersonator": "rep@example.invalid", "customer": "buyer@example.invalid"}
+    ]
+  },
+  "content.pages": {
+    "pages": [
+      {
+        "menuText": "Home",
+        "urlName": "home",
+        "itemType": "Swift-v2_Page",
+        "path": "/en-us/home",
+        "adopt": true,
+        "rows": [
+          {"sort": 1, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"},
+          {"sort": 2, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"}
+        ],
+        "paragraphs": [
+          {"row": 1, "column": 1, "sort": 1, "itemType": "Swift-v2_Poster", "template": "TextMiddleLeft.cshtml", "fields": {"Eyebrow": "<p class=\"dw-paragraph\">Tools for the trade</p>", "Title": "<h1 class=\"dw-h1\">Built for daily site work</h1>", "Text": "<p>Hand tools and fixings, in stock and ready to ship.</p>", "FirstButton": "", "SecondButton": ""}},
+          {"row": 2, "column": 1, "sort": 2, "itemType": "Swift-v2_Text", "template": "TextCenter.cshtml", "fields": {"Title": "<h2 class=\"dw-h2\">Who we serve</h2>", "Text": "<p>Contractors and installers who order every week.</p>", "FirstButton": "", "SecondButton": ""}}
+        ]
+      },
+      {
+        "menuText": "About us",
+        "urlName": "about-us",
+        "itemType": "Swift-v2_Page",
+        "sort": 100,
+        "public": true,
+        "path": "/en-us/about-us",
+        "footer": "About the shop",
+        "rows": [
+          {"sort": 1, "definitionId": "1Column", "container": "Grid", "itemType": "Swift-v2_Row"}
+        ],
+        "paragraphs": [
+          {"row": 1, "column": 1, "sort": 100, "itemType": "Swift-v2_Text", "template": "TextLeft.cshtml", "fields": {"Title": "About us", "Text": "<p>Who we are.</p>", "FirstButton": "", "SecondButton": ""}}
+        ]
+      },
+      {
+        "menuText": "Our history",
+        "urlName": "our-history",
+        "itemType": "Swift-v2_Page",
+        "parent": "About us",
+        "sort": 100
+      }
+    ]
+  },
+  "prices": {
+    "currency": "USD",
+    "listPrices": [
+      {"product": "EX-100", "amount": 12},
+      {"product": "EX-200", "amount": 40}
+    ],
+    "tiers": [
+      {"product": "EX-100", "quantity": 10, "amount": 6}
+    ],
+    "customerGroup": "Example Trading",
+    "groupPrices": [
+      {"product": "EX-200", "amount": 36}
+    ],
+    "contracts": [
+      {"account": "C-1001", "product": "EX-100", "amount": 7}
+    ],
+    "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer", "account": "C-1001"}
+  },
+  "brand": {
+    "id": "contoso",
+    "name": "Contoso",
+    "defaultColorScheme": "light",
+    "colorSchemes": [
+      {"id": "light", "name": "Light", "backgroundColor": "#FFFFFF", "foregroundColor": "#1B2A27", "primaryButtonColor": "#0B5D4B", "secondaryButtonColor": "#C2410C"},
+      {"id": "dark", "name": "Dark", "backgroundColor": "#0B2E26", "foregroundColor": "#F3F7F5", "primaryButtonColor": "#F3F7F5", "secondaryButtonColor": "#F59E0B"},
+      {"id": "primary", "name": "Primary", "backgroundColor": "#0B5D4B", "foregroundColor": "#FFFFFF", "primaryButtonColor": "#FFFFFF", "secondaryButtonColor": "#F59E0B"}
+    ],
+    "assetFolder": "contoso",
+    "files": [
+      {"file": "brand-kit/branding/contoso-logo.svg", "name": "contoso-logo.svg"},
+      {"file": "brand-kit/branding/contoso-favicon.png", "name": "contoso-favicon.png"},
+      {"file": "brand-kit/Fonts/contoso-sans-400.woff2", "name": "contoso-sans-400.woff2"}
+    ],
+    "fonts": [
+      {"id": "contoso-sans-400", "name": "Contoso Sans 400", "family": "Contoso Sans", "filePath": "/Files/Images/contoso/contoso-sans-400.woff2", "weight": "Regular", "style": "normal"}
+    ],
+    "typography": {
+      "baseFontSize": 16, "baseFontScale": 1.2,
+      "paragraphCustomFontId": "contoso-sans-400", "paragraphFontWeight": "Regular", "paragraphLineHeight": 1.6,
+      "headingCustomFontId": "contoso-sans-400", "headingFontWeight": "Regular", "headingLineHeight": 1.2,
+      "buttonCustomFontId": "contoso-sans-400", "buttonFontWeight": "Regular", "buttonLineHeight": 1.4, "buttonTextTransformation": "Uppercase"
+    },
+    "buttonStyle": {"shape": "Rounded", "borderSize": 1, "paddingX": 1.5, "paddingY": 0.7},
+    "favicon": "/Files/Images/contoso/contoso-favicon.png",
+    "renderCheck": [{"path": "/en-us/home"}],
+    "layout": [
+      {"slot": "HeaderDesktop", "logo": {"Image": "/Files/Images/contoso/contoso-logo.svg", "LogoName": "Contoso"}, "rows": [{"sort": 4, "colorScheme": "primary"}]}
+    ]
+  },
+  "history": {
+    "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer"},
+    "shop": "SHOP1",
+    "orderStates": [
+      {"state": "completed", "name": "Completed"},
+      {"state": "rejected", "name": "Rejected"},
+      {"state": "open", "name": "New"}
+    ],
+    "numbering": {"prefix": "EX-"},
+    "orders": [
+      {"reference": "EX-PO-001", "daysAgo": 30, "state": "completed", "lines": [{"product": "EX-100", "quantity": 12}, {"product": "EX-200", "quantity": 2}]},
+      {"reference": "EX-PO-002", "daysAgo": 10, "state": "rejected", "lines": [{"product": "EX-200", "quantity": 1}]},
+      {"reference": "EX-PO-003", "daysAgo": 1, "state": "open", "lines": [{"product": "EX-100", "quantity": 5}]}
+    ],
+    "quotes": [
+      {"reference": "EX-Q-001", "daysAgo": 3, "state": "QuoteSent", "comment": "Quote for 100 units", "lines": [{"product": "EX-100", "quantity": 100}]}
+    ],
+    "favourites": [
+      {"name": "Reorder list", "products": ["EX-100"]}
+    ]
+  },
+  "checkout": {
+    "country": "US",
+    "language": "ENU",
+    "buyer": {"userName": "buyer@example.invalid", "passwordRef": "buyer"},
+    "methods": [
+      {"name": "Card", "kind": "payment", "active": true, "anonymous": true, "fee": 2.5},
+      {"name": "On account", "kind": "payment", "active": true, "anonymous": false, "customerGroups": ["Example Trading"], "termsCode": "NET30"},
+      {"name": "Ground", "kind": "shipping", "active": true, "anonymous": true, "fee": 9.5},
+      {"name": "Account freight", "kind": "shipping", "active": true, "anonymous": false, "customerGroups": ["Example Trading"]}
+    ]
+  }
+}

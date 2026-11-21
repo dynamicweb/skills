@@ -40,6 +40,76 @@ The orchestrator abstraction (modes, the strictness
 gradient, acceptance criteria) is owned by [references/orchestrator.md](references/orchestrator.md).
 Every sister demo skill carries the same "how to run me" header and defers to that reference.
 
+## Build from the library first (before any write)
+
+**The build chain, the same for every brand:**
+
+1. **One set run**: verify, apply once, pay debts, final verify, from the customer data file.
+   It is mechanical. **When your agent can start a subagent or sub-session, start one for it and
+   name the small tier's model in that call**; a call without a model inherits yours and saves
+   nothing. Read the brief's custom work while it runs, then read its report. Run the set
+   yourself only when your agent has no such mechanism, and say in the hand-in which model ran it.
+2. **The orchestrator (top tier) builds what the set reports it does not cover**: a BLOCKED
+   line's reason, the index's "What stays planned", and the custom storefront work, cut into work
+   packages while the set runs and built by parallel builder sub-agents once its apply has ended.
+3. **A final verify of the set** (all PASS) plus each moment checked on the live site by a
+   sub-agent that did not build it; the hand-in reports those checks.
+
+Delegating step 1 never ends the orchestrator's work: it owns the whole brief and the hand-in.
+Tiers, what to give the delegate, what to demand back and how to read it:
+[orchestrator.md](references/orchestrator.md) "Model tier", "Build construction for speed" and
+"Delegating the recipe set".
+
+What every branded build writes goes in the data file, so step 1 writes it:
+
+| Build writes | Data file |
+|---|---|
+| Colours, fonts, logo, favicon | `brand` (`ConvertFrom-DwBrandKit.ps1`) |
+| Pages and their copy, standard pages too (restate the page, row and paragraph to change its copy) | `content.pages` |
+| A page whose path a base page already holds (its stock rows retired) | `content.pages.pages[].adopt` with its `path`, `rows` and `paragraphs` |
+| The home page's hero and intro, the sample counters and copy gone | a `content.pages` item for the home page (`Home`, its path, `adopt: true`, the hero and intro rows and paragraphs) |
+| A page linked from a footer column | `content.pages.pages[].footer` (the column folder's menu text) |
+| A former name left in stock content | `debrand` |
+| Accounts, personas, grants, passwords | `users.accounts` (passwords: `users.frontend-sign-in`) |
+| Prices or add to cart hidden from guests | `checkout.hideForAnonymous` |
+| Guest payment and shipping | `checkout.methods[].anonymous`, `customerGroups` |
+| The base's sample payment and shipping methods off the checkout | `checkout.retireUnnamed` (on by default: every active method of a kind the file names none of is set inactive), `keepMethods` |
+| Catalogue, prices, order history | `catalogue`, `prices`, `history` |
+
+No recipe yet: product relations (accessory, related, spare part) and header menu placement; the
+orchestrator makes them in step 2.
+**The first step of every build, once MCP answers, is one verify run of the recipe set. No write
+by hand, by MCP tool or by script comes before it.** It writes nothing:
+
+```powershell
+pwsh -NoProfile -File <skills>/dw-demo-ledger/scripts/Invoke-DwRecipeSet.ps1 -InputPath <customer data file>
+```
+
+No data file yet: write it first, one JSON file matching
+[`recipe-input.schema.json`](../dw-demo-ledger/assets/recipe-input.schema.json) (start from
+[`recipe-input.example.json`](../dw-demo-ledger/assets/recipe-input.example.json); `brand` from a
+brand kit with `ConvertFrom-DwBrandKit.ps1`). Then act on its summary table, row by row:
+
+| Steps column says | Do |
+|---|---|
+| `WC` or `WU` above 0 | Run the same command with `-Apply`. Exit 0 is built and proven |
+| only `=` and `D` | Done. `D` is data a layer copy delivered: never write it again, by hand or otherwise |
+| `B` above 0 | Read the BLOCKED line's reason; fix the input or the grant, run again |
+| What you need has no recipe | `Find-DwRecipe.ps1 -Function <id>`; build by hand only that |
+
+**After a delivered layer copy** (catalogue, prices, users and history from the generator): the
+recipes that still write are `content.design-styles` (brand), `content.pages`, `content.page-seo`
+(de-brand), `users.accounts` (accounts and grants), `users.frontend-sign-in` (the personas'
+passwords) and `orders.payment-methods` (checkout).
+`pim.data-models`, `pim.identifiers`, `commerce.customer-prices` and `orders.completed-orders`
+report `=` or `D` and write nothing. No flag is needed for that. A user the copy delivered gets its
+password from `users.frontend-sign-in` (the Management API `UserSetPassword`), never from SQL
+([recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md) "Passwords").
+
+**MCP tools only, no shell**: do the same in the index's run order with
+[recipe-by-hand.md](../dw-demo-ledger/references/recipe-by-hand.md): find first, write only what is
+absent, never a second copy of what is there. Modes, environments and paths:
+[references/orchestrator.md](references/orchestrator.md) "Build from the library".
 ## Environment fork — local install vs hosted (online) install
 
 The canonical flow below assumes a **local install** (scaffold + SQL Express on the demo machine). When the engagement instead hands you a **site URL + Admin API bearer key** — a vendor-hosted/cloud install with no machine to scaffold on — the build forks to [`dw-demo-hosted`](../dw-demo-hosted/SKILL.md), which owns the deltas: which canonical steps to skip, the session-start probe (tool availability on hosted installs is **version-dependent** — MCP may or may not be exposed; always probe, never assume), the Management API recipe pack that substitutes for MCP/SQL recipes, and the shared-install discipline. Moving a demo that was built locally onto a hosted install is a **migration, not a deploy** — a separate playbook with its own failure modes, owned by [`dw-demo-hosted/references/publish-to-hosted.md`](../dw-demo-hosted/references/publish-to-hosted.md). The always-on rules (surface priority, guarded writes, customer-context, demo philosophy) apply in both modes.
@@ -179,6 +249,7 @@ For release-pinned function coverage and equivalent read-only check bindings, us
 | [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 | [Remove-SwiftVendorBoilerplate.ps1](scripts/Remove-SwiftVendorBoilerplate.ps1) | Dry-run by default; `-Apply` rewrites stock vendor boilerplate in Swift items + module settings, backing originals up | Content-matched debrand of the stock phrases (pii-sweep Rule 2); cookie names untouched by construction; lists the manual-pass remainder. Local installs only |
 | [Test-DwDemoStoryline.ps1](scripts/Test-DwDemoStoryline.ps1) | Read-only (optionally writes a JSON result file) | The consumer self-check, not a gate: every storyline page answers 200 and carries no placeholder copy in its VISIBLE TEXT, and every persona signs in with the session proved to BE that persona. Zero probes is FAIL. Secrets from the environment or a secrets file, masked in every line. Its hermetic Pester suite is [scripts/tests/Test-DwDemoStoryline.Tests.ps1](scripts/tests/Test-DwDemoStoryline.Tests.ps1) |
+| [New-DwBuildBrief.ps1](scripts/New-DwBuildBrief.ps1) | Read-only (optionally writes the brief to a file) | The brief that starts a build session, with the model split filled in from the caller's model ids ([orchestrator.md](references/orchestrator.md) "Delegating the recipe set") |
 | [admin-shell-driver.mjs](scripts/admin-shell-driver.mjs) | Read-only by default; `gridEditCell` writes one cell behind a read-back/abort guard | The five DW 10.28 admin-shell Playwright guards as an importable module plus a small CLI. The rules stay in [references/browser-automation.md](references/browser-automation.md) — this is the how. Node.js 20+ with Playwright |
 
 

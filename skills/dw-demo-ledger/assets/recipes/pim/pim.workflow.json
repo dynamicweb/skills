@@ -1,0 +1,123 @@
+{
+  "schema": 1,
+  "id": "pim.workflow",
+  "name": "A product workflow with its states and transitions, attached to data models",
+  "functions": ["pim.workflow"],
+  "skill": "dw-demo-pim",
+  "inputs": {"section": "pim.workflow", "required": ["name", "states"]},
+  "dependsOn": [
+    {"recipe": "pim.data-models", "why": "The workflow is attached to data models that recipe creates."}
+  ],
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "No MCP tool creates a workflow or attaches one to a data model; the states and transitions are MCP."},
+    "hosted": {"usable": true, "reason": "The workflow and the attachment are Management API commands, the states MCP tools; nothing needs SQL or a recycle."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "workflow",
+      "title": "Ensure the workflow by name",
+      "key": "{input.name}",
+      "find": {"bindings": [
+        {"id": "mcp-workflows", "surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data", "match": {"name": "{input.name}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-workflow", "surface": "mcp", "status": "planned", "reason": "No MCP tool creates a workflow: create_or_update_workflow_states refuses workflowId 0.", "source": "skills/dw-pim-modelling/references/model-writes.md"},
+        {"id": "admin-workflow", "surface": "admin-api", "status": "implemented", "source": "skills/dw-data-access/references/recipes-pim.md",
+          "create": {"operation": "Dynamicweb.Products.UI.Commands.Settings.WorkflowSaveCommand", "arguments": {"Model": {"Id": 0, "Name": "{input.name}"}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data", "match": {"name": "{input.name}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "The short command WorkflowSave is the content workflow: it answers ok and writes an AccessWorkflow row. Only the full type name reaches the PIM workflow.",
+      "source": "skills/dw-data-access/references/recipes-pim.md"
+    },
+    {
+      "id": "states",
+      "title": "Ensure each state in the workflow by name",
+      "forEach": "states[*]",
+      "key": "{item.name}",
+      "find": {"bindings": [
+        {"id": "mcp-states", "surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-state", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_or_update_workflow_states", "arguments": {"models": [{"id": 0, "workflowId": "{step.workflow[input.name].id}", "name": "{item.name}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "The state rows carry no workflow id, so a state is found by name across every workflow: state names must be unique on the solution.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "transitions",
+      "title": "Set the states each state may move to",
+      "forEach": "states[*]",
+      "key": "{item.name}",
+      "find": {"bindings": [
+        {"id": "mcp-transitions", "surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "compare": {"nextStateIds": "{step.states[item.next[*]].id|[]}"}, "unordered": ["nextStateIds"], "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-next", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_or_update_workflow_states", "arguments": {"models": [{"id": "{step.states.id}", "name": "{item.name}", "nextStateIds": "{step.states[item.next[*]].id|[]}"}]}},
+          "update": {"operation": "create_or_update_workflow_states", "arguments": {"models": [{"id": "{step.states.id}", "name": "{item.name}", "nextStateIds": "{step.states[item.next[*]].id|[]}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data[*].states", "match": {"name": "{item.name}"}, "expect": {"nextStateIds": "{step.states[item.next[*]].id|[]}"}, "unordered": ["nextStateIds"], "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "nextStateIds can only name states that exist, so the transitions are a second pass after every state is created. get_workflow_states lists a state's next states sorted by id, not in the order they were saved, so the list is compared in any order (unordered).",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "models",
+      "title": "Find each data model the workflow is attached to by name",
+      "forEach": "dataModels[*]",
+      "key": "{item}",
+      "find": {"bindings": [
+        {"id": "mcp-shops", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item}"}, "produces": {"id": "id", "categoryId": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-model-name", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "update": {"operation": "patch_data_models", "arguments": {"requests": [{"dataModelId": "{found.id}", "patch": {"name": "{item}"}}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item}"}, "produces": {"id": "id", "categoryId": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "The data models are the pim.data-models recipe's: this recipe creates none, so an absent one blocks its attachment (no create binding).",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "attach",
+      "title": "Attach the workflow to each data model, keeping the rest of the model",
+      "forEach": "dataModels[*]",
+      "key": "{item}",
+      "find": {"bindings": [
+        {"id": "admin-model", "surface": "admin-api", "status": "implemented", "operation": "DataModelGroupById", "arguments": {"Id": "{step.models.id}"}, "rows": "model", "match": {"id": "{step.models.id}"}, "compare": {"workflowId": "{step.workflow[input.name].id}"}, "source": "skills/dw-data-access/references/recipes-pim.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-attach", "surface": "mcp", "status": "planned", "reason": "No MCP tool sets a data model's workflow: patch_data_models takes name, description, type and categoryId.", "source": "skills/dw-pim-modelling/references/model-writes.md"},
+        {"id": "admin-attach", "surface": "admin-api", "status": "implemented", "source": "skills/dw-data-access/references/recipes-pim.md",
+          "update": {"operation": "DataModelGroupSave", "arguments": {"Model": {"Id": "{found.id}", "ShopId": "{found.shopId}", "LanguageId": "{found.languageId}", "Name": "{found.name}", "Number": "{found.number|null}", "CategoryId": "{found.categoryId|null}", "InheritFromParent": "{found.inheritFromParent}", "WorkflowId": "{step.workflow[input.name].id}", "CompletionRules": "{found.completionRules|[]}", "CompletionLanguages": "{found.completionLanguages|[]}", "CompletenessOnAllCategoryFields": "{found.completenessOnAllCategoryFields}", "ParentId": "{found.parentId|null}", "PrimaryParentGroupId": "{found.primaryParentGroupId|null}"}}},
+          "readBack": {"surface": "admin-api", "status": "implemented", "operation": "DataModelGroupById", "arguments": {"Id": "{step.models.id}"}, "rows": "model", "match": {"id": "{step.models.id}"}, "expect": {"workflowId": "{step.workflow[input.name].id}", "categoryId": "{step.models.categoryId}"}, "source": "skills/dw-data-access/references/recipes-pim.md"}}
+      ],
+      "trap": "DataModelGroupSave is a whole-entity save: a model sent without its category, rules or parent loses them. The update sends back every member the read returned with only the workflow changed, and the read-back checks the category survived.",
+      "source": "skills/dw-data-access/references/recipes-pim.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["pim.workflow.states", "pim.workflow.transitions", "pim.workflow.attached"],
+    "probes": [
+      {
+        "id": "workflow-states",
+        "title": "The workflow holds every state the input names",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_workflow_states", "arguments": {}, "rows": "data", "match": {"name": "{input.name}"}, "assert": {"kind": "equals", "path": "states[*].name", "value": "{input.states[*].name}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "pim.workflow.1-verify.json (all WOULD-CREATE), pim.workflow.2-apply.json (10 of 10 from empty), pim.workflow.3-verify.json and pim.workflow.4-apply-again.json (10 of 10, nothing written), pim.workflow.5-mcponly.json (the attachment BLOCKED as declared); the transitions read back as WorkflowGoToState rows and the attached data model kept its category and completeness rule (pim.data-models.6-verify-after-workflow.json, 16 of 16)"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 10 of 10; MCP-only 0 of 10, no MCP tool creates a workflow (still on 0.6.6)."}
+  ],
+  "traps": [
+    "A workflow attached to a data model governs the products in it; the states, their transitions and the attachment are separate writes, and only the states and transitions have MCP tools.",
+    "Who may move a product between states (the workflow personas) is set on the workflow screen; this recipe sets none."
+  ]
+}

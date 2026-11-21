@@ -1,5 +1,7 @@
 # workflow.md
 
+> **A recipe exists: `pim.workflow`** ([recipe index](../../dw-demo-ledger/references/recipe-index.md)). Input: the `pim.workflow` section of the customer data file. It creates the workflow, its states and transitions and attaches it to the named data models, and proves the states and transitions. It leaves per-state role gating and notifications to this file. Run it with `Invoke-DwRecipeSet.ps1` ([Build from the library](../../dw-demo-base/references/orchestrator.md#build-from-the-library)); the procedure below stays the reference for hand work.
+
 > Demo routing for the Dynamicweb 10 product workflow. The platform knowledge — the five-table
 > schema, the two attachment paths, the email-firing state-change subscriber, the verified
 > per-state-role-gating gap, and the three workaround patterns — is vendor-generic and lives in

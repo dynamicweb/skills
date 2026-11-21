@@ -18,6 +18,11 @@ context; the two or three demo moments that land hardest; SKU mapping; catalog s
 model; punch-out / integration touchpoints. Keep the customer's own words. Read anything in the
 read-only `customer-context/` folder as input; never write to it.
 
+Draft the **customer data file** with it (`dw-demo-ledger` `assets/recipe-input.schema.json`,
+written under `notes/`): the brand, the personas, the catalogue and prices the analysis names, and
+the order history and pages the demo moments visit. The sign-off covers it; `/demo:build` runs the
+recipes from it.
+
 ## 3. PAUSE for sign-off (the gate)
 
 Present the analysis and call `AskUserQuestion`: *"Sign off on this impact analysis and proceed

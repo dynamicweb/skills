@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "id": "pim.documents",
+  "name": "Product documents filed in their own asset categories",
+  "functions": ["pim.documents"],
+  "skill": "dw-demo-pim",
+  "inputs": {"section": "catalogue", "required": ["products", "documentCategories"]},
+  "dependsOn": [
+    {"recipe": "pim.identifiers", "why": "The documents are attached to the products that recipe creates."}
+  ],
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "On MCP 0.6.3 (the oldest proven release) no MCP tool and no recipe Management API command creates a product asset category, so a new category is made in the admin screen; an existing one is found over MCP and the files and documents are written over MCP. From MCP 0.6.6 save_product_asset_categories creates it and every step runs MCP-only (see provenOn)."},
+    "hosted": {"usable": false, "reason": "As MCP-only: on 0.6.3 the category create has no binding; from 0.6.6 nothing needs SQL or the Management API."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "products",
+      "title": "Find each product that carries documents (the pim.identifiers recipe creates them)",
+      "forEach": "products[*]",
+      "key": "{item.number}",
+      "skipWhen": {"path": "item.documents", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-sku", "surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.number}"], "languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"number": "{item.number}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [],
+      "trap": "A lookup: a product the catalogue has not created is WOULD-CREATE here, and its documents wait for it.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "categories",
+      "title": "Ensure one FileSelector asset category per document kind, with its file-type filter",
+      "forEach": "documentCategories[*]",
+      "key": "{item.key}",
+      "find": {"bindings": [
+        {"id": "mcp-categories", "surface": "mcp", "status": "implemented", "operation": "get_product_asset_categories", "arguments": {}, "rows": "data", "match": {"systemName": "{item.key}"}, "compare": {"name": "{item.name}", "allowedExtensions": "{item.extensions}", "controlType": "FileSelector"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-category", "surface": "mcp", "status": "implemented", "mcpSince": "0.6.6", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "save_product_asset_categories", "arguments": {"categories": [{"systemName": "{item.key}", "name": "{item.name}", "controlType": "FileSelector", "extensions": "{item.extensions}"}]}},
+          "update": {"operation": "save_product_asset_categories", "arguments": {"categories": [{"id": "{found.id}", "name": "{item.name}", "controlType": "FileSelector", "extensions": "{item.extensions}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_product_asset_categories", "arguments": {}, "rows": "data", "match": {"systemName": "{item.key}"}, "expect": {"name": "{item.name}", "allowedExtensions": "{item.extensions}", "controlType": "FileSelector"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "save_product_asset_categories exists from MCP 0.6.6; an older server offers no MCP write for an asset category, so the step is BLOCKED there and the category is made in the admin screen.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "document-files",
+      "title": "Upload each document file from the input folder into /Files/Images",
+      "forEach": "products[*].documents[*]",
+      "key": "{parent.number}/{item.path}",
+      "skipWhen": {"path": "item.category", "exists": false},
+      "repeat": "reuse",
+      "find": {"bindings": [
+        {"id": "mcp-files", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{basename:item.path}", "isDirectory": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-upload-file", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "upload_file", "arguments": {"path": "/Files/Images/{basename:item.path}", "content": "{base64:item.path}", "isBase64": true, "overwrite": false}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{basename:item.path}", "isDirectory": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "upload_file writes only under /Files/Images, /Files/Videos, /Files/Digital assets and /Files/Files/Integration, so a document file shares /Files/Images with the product images and its name must be unique there.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "documents",
+      "title": "Attach each document to its product in its asset category",
+      "forEach": "products[*].documents[*]",
+      "key": "{parent.number}/{item.path}",
+      "skipWhen": {"path": "item.category", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-details", "surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products[parent.number].id}"}, "rows": "data", "match": {"value": "/Files/Images/{basename:item.path}"}, "compare": {"name": "{item.name}"}, "produces": {"detailId": "detailId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-attach", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "add_product_image", "arguments": {"request": {"productId": "{step.products[parent.number].id}", "filePath": "/Files/Images/{basename:item.path}", "groupId": "{step.categories[item.category].id}", "name": "{item.name}", "setAsPrimary": false}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products[parent.number].id}"}, "rows": "data", "match": {"value": "/Files/Images/{basename:item.path}"}, "expect": {"name": "{item.name}"}, "produces": {"detailId": "detailId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "add_product_image registers any file the category's extensions allow, not only images; get_product_images lists the document among the images but carries no category, so the category is proven on the delivery API (probe documents-delivered).",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["pim.documents.document-categories", "pim.documents.products-with-documents", "pim.documents.category-names"],
+    "probes": [
+      {
+        "id": "documents-delivered",
+        "title": "The delivery API lists each document under its asset category on the product",
+        "forEach": "products[*].documents[*]",
+        "skipWhen": {"path": "item.category", "exists": false},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.products[parent.number].id}", "LanguageId": "{build.defaultLanguage}"}, "rows": "assetCategories", "match": {"systemName": "{item.category}"}, "assert": {"kind": "contains", "path": "assets[*].value", "value": "/Files/Images/{basename:item.path}"}, "source": "skills/dw-headless-delivery/references/endpoint-reference.md"}
+        ]
+      },
+      {
+        "id": "document-served",
+        "title": "Each document file answers 200",
+        "forEach": "products[*].documents[*]",
+        "skipWhen": {"path": "item.category", "exists": false},
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Files/Images/{basename:item.path}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "On the add-in rolled back to 0.6.3-BETA, a fictional document filed under an existing category: d1-verify (file and document WOULD-CREATE, 8 of 12), d2-apply (uploaded, attached, read back, 12 of 12, no debt), d3-verify and d4-apply-again (12 of 12, nothing written); the delivery API listed the PDF under the category on the product and the file answered 200. A new category in the input was BLOCKED in apply: save_product_asset_categories is not offered by 0.6.3."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "The whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA: 1-verify (two categories, two PDF files and two documents WOULD-CREATE, after pim.identifiers in the order), 2-apply (categories created by save_product_asset_categories with the pdf filter, two generated PDF datasheets uploaded and attached in their categories, 9 of 9, no debt), 3-verify, 4-apply-again and 5-verify (9 of 9, nothing written); GET /dwapi/ecommerce/products/{id} listed each PDF under its category systemName and each file answered 200. MCP-only on a second fresh input: every step CREATED over MCP, 8 of 9 with the delivery probe not observable.", "modes": {"mcpOnly": true, "hosted": true}}
+  ],
+  "traps": [
+    "Up to MCP 0.6.3 no MCP tool creates a product asset category; 0.6.6 adds save_product_asset_categories (and delete_product_asset_categories).",
+    "A document is a file detail like an image: add_product_image with the category's groupId files it under that category, and the delivery API product read lists it in assetCategories by the category's systemName."
+  ]
+}

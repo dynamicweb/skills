@@ -1,5 +1,7 @@
 # styles-assets.md
 
+> **A recipe exists: `content.design-styles`** ([recipe index](../../dw-demo-ledger/references/recipe-index.md)). Input: the `brand` section of the customer data file. It uploads the brand files and writes fonts, typography, buttons and colour schemes under a net-new style id, wires the website, and proves the sheets, fonts, logo and favicon are served. It leaves the custom brand sheet and head include. Run it with `Invoke-DwRecipeSet.ps1` ([Build from the library](../../dw-demo-base/references/orchestrator.md#build-from-the-library)); the procedure below stays the reference for hand work.
+
 > Per-demo Style assets (Color Schemes, Buttons, Typography, Fonts) — the higher-leverage re-skin lever above `<customer>_custom.css`. Cross-references out to [`re-skin.md`](re-skin.md) (escalation ladder) and [`admin-ui-authoring.md`](admin-ui-authoring.md) (Day-1 admin-UI workflow).
 >
 > Swift 2.x guidance — never follow `/swift/swift-1/` URLs (different content model, phased out).

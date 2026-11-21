@@ -43,6 +43,9 @@ Checks (errors fail the build, warnings are printed but do not):
   - No file under skills/, and no top-level or docs/ markdown file, links to a
     private repository (PRIVATE_REPOSITORIES): the link is dead for a public
     reader. Describe the behaviour in place instead.
+  - No markdown file under skills/ or .claude/skills/ names a provider model
+    (Opus, Sonnet, Haiku, claude-<model>, gpt-<n>, o<n>, gemini-<n>): skills
+    name a tier (top, mid, small) and the running agent maps it.
   - WARN if a skill description lacks a trigger signal (Triggers:/Use when/Use FIRST).
   - WARN if a scripts/ file is never linked from markdown in its own skill.
   - WARN if a SKILL.md body exceeds 500 lines or 16000 characters (split into
@@ -467,7 +470,17 @@ def mcp_registry() -> tuple[set[str], set[str], Path] | None:
     except json.JSONDecodeError as e:
         err(f"{rel(path)}: invalid JSON ({e})")
         return None
-    return set(doc.get("tools", {})), set(doc.get("notTools", [])), path
+    tools = set(doc.get("tools", {}))
+    # A name another supported release registers is a real tool too (a newer server adds tools, and a
+    # skill that cites one names the release); the file in play still supplies notTools.
+    try:
+        for version in json.loads(MCP_TOOLS_INDEX.read_text(encoding=ENCODING)).get("supported") or []:
+            other = MCP_TOOLS_DIR / f"{version}.json"
+            if other != path and other.is_file():
+                tools |= set(json.loads(other.read_text(encoding=ENCODING)).get("tools", {}))
+    except json.JSONDecodeError:
+        pass
+    return tools, set(doc.get("notTools", [])), path
 
 
 def tool_tokens(line: str) -> list[str]:
@@ -899,6 +912,37 @@ def check_no_private_links() -> None:
         for i, link in private_repository_links(text):
             err(f"{rel(f)}:{i}: link to a private repository ({link}) - "
                 "describe the behaviour in place instead")
+
+
+# Provider model names. The skills run on more than one agent and provider, so
+# they name a tier (top, mid, small; dw-demo-base orchestrator.md "Model tier")
+# and leave the agent to map it to a model it offers. Agent products (Claude
+# Code, Codex) are not models and stay allowed.
+MODEL_NAME_RE = re.compile(
+    r"(?i)\b(?:opus|sonnet|haiku)\b"
+    r"|\bclaude-(?:opus|sonnet|haiku|instant|\d)"
+    r"|\bgpt-\d"
+    r"|\bo[1-9](?:-mini|-pro)?\b"
+    r"|\bgemini-\d")
+
+
+def model_name_hits(text: str) -> list[tuple[int, str]]:
+    """(line, name) for every provider model name in a text."""
+    return [(i, m.group(0)) for i, line in enumerate(text.splitlines(), 1)
+            for m in MODEL_NAME_RE.finditer(line)]
+
+
+def check_no_model_names() -> None:
+    files = set(SKILLS_DIR.rglob("*.md"))
+    files.update((REPO / ".claude" / "skills").rglob("*.md"))
+    for f in sorted(files):
+        text = read_text_checked(f)
+        if text is None:
+            continue
+        for i, name in model_name_hits(text):
+            err(f"{rel(f)}:{i}: provider model name ({name}) - name a tier "
+                "(top, mid, small) instead; dw-demo-base orchestrator.md "
+                "\"Model tier\" maps it")
 
 
 def check_no_environment_literals() -> None:
@@ -1599,6 +1643,7 @@ def main() -> int:
     check_no_secrets()
     check_no_environment_literals()
     check_no_private_links()
+    check_no_model_names()
     check_script_contract()
     check_av_safe_scripts()
     check_script_imports()
@@ -1613,6 +1658,9 @@ def main() -> int:
     # PowerShell 7 supplies Test-Json, as in the shipped runner and this repo's CI.
     from validate_ledger import validate_ledgers
     errors.extend(validate_ledgers(SKILLS_DIR.parent))
+    # Recipes: the replayable form of a ledger function, checked against the same snapshots and allowlists.
+    from validate_recipes import validate_recipes
+    errors.extend(validate_recipes(SKILLS_DIR.parent))
 
     for w in warnings:
         print(f"WARN  {w}")

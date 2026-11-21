@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "id": "pim.data-models",
+  "name": "One data model per top group, with its category, spec fields, display group and completeness rule",
+  "functions": ["pim.data-models", "pim.field-scope", "pim.field-display-groups", "pim.completeness-rules"],
+  "skill": "dw-demo-pim",
+  "inputs": {"section": "catalogue", "required": ["groups", "pimFolder"]},
+  "modes": {
+    "mcpOnly": {"usable": false, "reason": "No MCP read lists a product category that has no fields yet (get_product_category_fields lists fields), so the category step needs the Management API read ProductCategoriesAll."},
+    "hosted": {"usable": true, "reason": "Every step finds, writes and reads back with MCP tools and the Management API; nothing needs SQL or a recycle."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "folder",
+      "title": "Ensure the data-model folder under the PIM shop by name",
+      "key": "{input.pimFolder}",
+      "find": {"bindings": [
+        {"id": "mcp-shops", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels", "match": {"name": "{input.pimFolder}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-create-folder", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_data_models", "arguments": {"requests": [{"parentId": "{build.pimShop}", "model": {"name": "{input.pimFolder}", "type": "DataModelFolder"}}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels", "match": {"name": "{input.pimFolder}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "get_shops nests the hierarchy: a folder sits in a shop's dataModels with its models in its own dataModels, while a model created straight under the shop is listed in topLevelDataModels instead.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "categories",
+      "title": "Ensure one CategoryFields product category per top group by name",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "skipWhen": {"path": "item.parent", "exists": true},
+      "find": {"bindings": [
+        {"id": "mcp-categories", "surface": "mcp", "status": "planned", "reason": "No MCP read lists a category: get_product_category_fields returns the fields of CategoryFields categories, so a category without fields is invisible to it.", "source": "skills/dw-pim-modelling/references/model-writes.md"},
+        {"id": "admin-categories", "surface": "admin-api", "status": "implemented", "operation": "ProductCategoriesAll", "arguments": {}, "rows": "model.data", "match": {"name": "{item.name}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-pim.md"}
+      ], "delivered": [
+        {"id": "layer-model-category", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item.name}"}, "produces": {"id": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-create-category", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_categories", "arguments": {"requests": [{"systemName": "{item.key}", "name": "{item.name}", "categoryType": "CategoryFields"}]}},
+          "readBack": {"surface": "admin-api", "status": "implemented", "operation": "ProductCategoriesAll", "arguments": {}, "rows": "model.data", "match": {"name": "{item.name}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-pim.md"}}
+      ],
+      "trap": "create_categories drops the hyphens of a system name (my-tools becomes mytools) and answers isNew false even for a new category, so the category is found by name and its id is read back, never derived from the key.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "models",
+      "title": "Ensure one data model per top group in the folder, bound to its category",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "skipWhen": {"path": "item.parent", "exists": true},
+      "deliveredWith": {"step": "categories"},
+      "find": {"bindings": [
+        {"id": "mcp-shops", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item.name}"}, "compare": {"categoryId": "{step.categories.id}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-model", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_data_models", "arguments": {"requests": [{"parentId": "{step.folder[input.pimFolder].id}", "model": {"name": "{item.name}", "type": "DataModel"}, "categoryId": "{step.categories.id}"}]}},
+          "update": {"operation": "patch_data_models", "arguments": {"requests": [{"dataModelId": "{found.id}", "patch": {"categoryId": "{step.categories.id}"}}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item.name}"}, "expect": {"categoryId": "{step.categories.id}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "create_data_models stores any categoryId, also one no category has, so the category step runs first and its read-back id is the one bound. Never bind a category through the Management API DataModelGroupSave with a partial model: it is a whole-entity save and clears the category.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "fields",
+      "title": "Ensure each spec field in its top group's category, the same in every language and variant",
+      "forEach": "groups[*].specFields[*]",
+      "key": "{parent.key}/{item.key}",
+      "deliveredWith": {"step": "categories", "key": "{parent.key}"},
+      "find": {"bindings": [
+        {"id": "mcp-fields", "surface": "mcp", "status": "implemented", "operation": "get_product_category_fields", "arguments": {}, "rows": "data", "match": {"systemName": "ProductCategory|{step.categories[parent.key].id}|{item.key}"}, "compare": {"allowChangesAcrossLanguages": false, "allowChangesAcrossVariants": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-field", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_category_fields", "arguments": {"requests": [{"categoryId": "{step.categories[parent.key].id}", "fieldModel": {"id": "{item.key}", "label": "{item.label}", "templateTag": "{item.key}", "type": 1, "allowChangesAcrossLanguages": false, "allowChangesAcrossVariants": false}}]}},
+          "update": {"operation": "update_category_fields", "arguments": {"requests": [{"categoryId": "{step.categories[parent.key].id}", "fieldId": "{item.key}", "allowChangesAcrossLanguages": false, "allowChangesAcrossVariants": false}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_product_category_fields", "arguments": {}, "rows": "data", "match": {"systemName": "ProductCategory|{step.categories[parent.key].id}|{item.key}"}, "expect": {"label": "{item.label}", "allowChangesAcrossLanguages": false, "allowChangesAcrossVariants": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "Spec fields are Text (255), type 1. get_product_category_fields lists only CategoryFields categories, leaves fieldId empty and carries the id in systemName ProductCategory|<category>|<field>. update_category_fields sets the scope flags and not the label, so a changed label is not updated.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "display-group",
+      "title": "Ensure one storefront display group per top group holding its spec fields in input order",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "skipWhen": {"path": "item.specFields", "exists": false},
+      "deliveredWith": {"step": "categories"},
+      "find": {"bindings": [
+        {"id": "mcp-display-groups", "surface": "mcp", "status": "implemented", "operation": "get_field_display_groups", "arguments": {}, "rows": "data", "match": {"systemName": "{step.categories.id}"}, "compare": {"name": "{item.name}", "availableInFrontend": true, "fieldIdsList": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-display-group", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "save_field_display_group", "arguments": {"group": {"id": 0, "systemName": "{step.categories.id}", "name": "{item.name}", "availableInFrontend": true, "fieldIdsList": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}}},
+          "update": {"operation": "save_field_display_group", "arguments": {"group": {"id": "{found.id}", "name": "{item.name}", "availableInFrontend": true, "fieldIdsList": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_field_display_groups", "arguments": {}, "rows": "data", "match": {"systemName": "{step.categories.id}"}, "expect": {"name": "{item.name}", "availableInFrontend": true, "fieldIdsList": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "save_field_display_group takes one group object, not a list; id 0 creates and then needs a system name no other group has. fieldIdsList replaces the whole membership. The delivery API shows a display group on a product only while the product has a value in one of its fields.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "rule",
+      "title": "Ensure one completeness rule per top group over its spec fields",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "skipWhen": {"path": "item.specFields", "exists": false},
+      "deliveredWith": {"step": "categories"},
+      "find": {"bindings": [
+        {"id": "mcp-rules", "surface": "mcp", "status": "implemented", "requiresSchema": {"output": ["data[*].fields"]}, "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"},
+        {"id": "mcp-rules-names", "surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "compare": {"excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-rule", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md",
+          "create": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": 0, "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
+          "update": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": "{found.id}", "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "requiresSchema": {"output": ["data[*].fields"]}, "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "expect": {"excludeVariants": true, "fields[*].systemName": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}},
+        {"id": "mcp-rule-names", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md",
+          "create": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": 0, "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
+          "update": {"operation": "create_or_update_completeness_rules", "arguments": {"models": [{"id": "{found.id}", "name": "{item.name} complete", "excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_completion_rules", "arguments": {}, "rows": "data", "match": {"name": "{item.name} complete"}, "expect": {"excludeVariants": true, "fieldSystemNames": "ProductCategory|{step.categories.id}|{item.specFields[*].key}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}}
+      ],
+      "trap": "The rule read changed shape between server releases: up to 0.6.3 get_completion_rules returns each rule's fields as objects (fields[].systemName); from 0.6.6 its rows carry only the fieldSystemNames list the write takes. Each read is gated on the tools/list output schema listing fields[] (requiresSchema), so a server without it takes the fieldSystemNames binding.",
+      "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"
+    },
+    {
+      "id": "rule-assignment",
+      "title": "Assign the rule to its data model in the default language",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "skipWhen": {"path": "item.specFields", "exists": false},
+      "deliveredWith": {"step": "categories"},
+      "find": {"bindings": [
+        {"id": "mcp-assignments", "surface": "mcp", "status": "implemented", "operation": "get_completion_rule_assignments_for_groups", "arguments": {"groupIds": ["{step.models.id}"]}, "rows": "data", "match": {"id": "{step.models.id}"}, "compare": {"rules[*].ruleId": ["{step.rule.id}"], "languageIds": ["{build.defaultLanguage}"]}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-assign", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md",
+          "create": {"operation": "assign_completion_rules_to_groups", "arguments": {"requests": [{"groupId": "{step.models.id}", "ruleIds": ["{step.rule.id}"], "languageIds": ["{build.defaultLanguage}"]}]}},
+          "update": {"operation": "assign_completion_rules_to_groups", "arguments": {"requests": [{"groupId": "{step.models.id}", "ruleIds": ["{step.rule.id}"], "languageIds": ["{build.defaultLanguage}"]}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_completion_rule_assignments_for_groups", "arguments": {"groupIds": ["{step.models.id}"]}, "rows": "data", "match": {"id": "{step.models.id}"}, "expect": {"rules[*].ruleId": ["{step.rule.id}"], "languageIds": ["{build.defaultLanguage}"]}, "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"}}
+      ],
+      "trap": "assign_completion_rules_to_groups replaces the group's whole assignment: a rule another recipe assigned to the same data model is removed.",
+      "source": "skills/dw-pim-completeness/references/rules-and-dashboards.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["pim.data-models.folder", "pim.field-scope.declared-scope", "pim.field-display-groups.groups", "pim.field-display-groups.unnamed-groups", "pim.completeness-rules.rules", "pim.completeness-rules.models-without-rule"],
+    "probes": [
+      {
+        "id": "model-unique",
+        "title": "Each top group has exactly one data model of its name",
+        "forEach": "groups[*]",
+        "skipWhen": {"path": "item.parent", "exists": true},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{item.name}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      },
+      {
+        "id": "display-group-storefront",
+        "title": "Each top group's display group is offered to the storefront",
+        "forEach": "groups[*]",
+        "skipWhen": {"path": "item.specFields", "exists": false},
+        "deliveredWith": {"step": "categories", "key": "{item.key}"},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_field_display_groups", "arguments": {"frontendOnly": true}, "rows": "data", "match": {"systemName": "{step.categories[item.key].id}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "pim.data-models.1-verify.json (all WOULD-CREATE), pim.data-models.2-apply.json (16 of 16 from empty), pim.data-models.3-verify.json and pim.data-models.4-apply-again.json (16 of 16, nothing written), pim.data-models.5-mcponly.json (categories BLOCKED as declared); a hyphenated group key stored its category without the hyphen and was found by name; the catalogue recipe proved the display group on the delivery API and a completeness figure on its products"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 15 of 15. On 0.6.6 get_completion_rules rows carry only fieldSystemNames; the read gated on fields[] (requiresSchema) falls to the fieldSystemNames binding, and a separate 0.6.3 run created two rules from empty through the fields[] read-back (15 of 15, apply-again nothing written). MCP-only 1 of 15: the categories have no MCP read, as declared."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "a site whose catalogue a rewritten sample-data layer copy delivered from the same input (spec fields in the layer's categories, which ProductCategoriesAll and get_product_category_fields do not list): set verify 8 of 8, the three categories found through their data models and DELIVERED, their 11 fields, display groups, rules and assignments DELIVERED, no WOULD-CREATE; set -Apply wrote nothing (category fields 22, field values 44, rules 3, display groups 1 before and after). From empty on a fresh input [mcp 0.6.6-BETA]: verify all WOULD-CREATE, apply, verify 15 of 15, apply again nothing written, no DELIVERED row."}
+  ],
+  "traps": [
+    "A top group is one data model and one product category; subgroups carry no spec fields. Data model names must be unique across the PIM shop's folders, because the models are found by name.",
+    "A layer copy keeps its own category ids, field ids and rule names and binds its data models to categories the category reads do not list (no CategoryFields category). The category step then finds the category through the data model of the group's name (find.delivered) and reports it DELIVERED; the fields, display group, rule and assignment of a delivered category that this recipe would create or change are DELIVERED too and never written, and the layer's own ledger checks verify them. MCP-only has no category read, so it cannot tell a layer's category from its own.",
+    "A product scores completeness only through a rule assigned to a group it sits in: get_completeness_status answers -1 when no rule applies. The catalogue recipe proves the figure on its products."
+  ]
+}

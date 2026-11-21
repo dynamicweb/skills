@@ -2,6 +2,7 @@
 
 ## Contents
 
+- [Build from the library](#build-from-the-library)
 - [The build path an orchestrator sequences](#the-build-path-an-orchestrator-sequences)
 - [Running modes](#running-modes)
 - [Standalone — the lightweight in-skill harness (no orchestrator)](#standalone--the-lightweight-in-skill-harness-no-orchestrator)
@@ -10,6 +11,8 @@
 - [Strictness gradient — one human pause, automated quality elsewhere (every mode)](#strictness-gradient--one-human-pause-automated-quality-elsewhere-every-mode)
 - [Dispatched sessions: the brief carries the execution authority](#dispatched-sessions-the-brief-carries-the-execution-authority)
 - [Model tier — a dial on the orchestrator, never a fork of the skills](#model-tier--a-dial-on-the-orchestrator-never-a-fork-of-the-skills)
+- [Build construction for speed](#build-construction-for-speed)
+- [Delegating the recipe set — the orchestrator keeps the brief](#delegating-the-recipe-set--the-orchestrator-keeps-the-brief)
 - [Discovery prompts (impact-analysis input)](#discovery-prompts-impact-analysis-input)
 - [Acceptance criteria (the shared definition of PASS)](#acceptance-criteria-the-shared-definition-of-pass)
 - ["How to run me" header — the convention every demo skill carries](#how-to-run-me-header--the-convention-every-demo-skill-carries)
@@ -41,6 +44,82 @@ Every mode reads the **same** SKILL.md files; no skill is rewritten for an orche
 dispatcher or another agent framework that drives a build is an orchestrator in the same sense:
 it sequences the phases below, holds the one human gate, and reads the same acceptance criteria.
 Two orchestrators never drive the same build.
+
+## Build from the library
+
+Every orchestrator, and the skills alone, builds the customer-specific content from the recipe
+library before it reaches for any prose procedure. A recipe is the proven, replayable form of one
+platform function ([`dw-demo-ledger` recipes.md](../../dw-demo-ledger/references/recipes.md)); the
+[recipe index](../../dw-demo-ledger/references/recipe-index.md) lists each one with its input
+section, what it proves, its modes and what it leaves to hand work. The build is one customer data
+file and one command.
+
+### 1. Write the customer data file
+
+One JSON file, validated against
+[`recipe-input.schema.json`](../../dw-demo-ledger/assets/recipe-input.schema.json) (start from
+[`recipe-input.example.json`](../../dw-demo-ledger/assets/recipe-input.example.json)). Each
+section feeds one recipe; a section that is absent is simply not built. Keep it in the demo's
+`notes\` folder, never in `customer-context\`, and keep passwords out of it: a user names a
+`passwordRef` and the value goes in `DW_RECIPE_SECRETS`.
+
+| Section | Recipe | For a branded demo |
+|---|---|---|
+| `brand` | `content.design-styles`: fonts, typography, buttons, colour schemes, logo, favicon, header and footer rows | **Mandatory.** From a brand kit: `ConvertFrom-DwBrandKit.ps1 -KitPath <kit>/swift2 -OutPath <file>` |
+| `users.accounts` | `users.accounts`: account and staff groups, users with passwords, impersonation | **Mandatory**: one buyer, one representative who may impersonate it |
+| `catalogue` | `pim.data-models` (with `pimFolder`), then `pim.identifiers`: groups, products, specs, images, stock | **Mandatory** |
+| `prices` | `commerce.customer-prices`: list prices, tiers, group and contract prices | **Mandatory**: the storefront lists a product only once it has a price |
+| `content.pages` | `content.pages`: pages, rows, paragraphs, item fields | When the storyline visits a page the edition does not ship |
+| `history` | `orders.completed-orders`: numbering, orders, quotes | When the storyline shows a customer centre |
+| `pim.workflow` | `pim.workflow`: states, transitions, attached to data models | PIM stories |
+| `debrand` | `content.page-seo`: every place a former name shows, replaced | When stock or inherited content names another company. Never put a forbidden text in another section: the set refuses it |
+| `build` | none: `areaId`, `defaultLanguage`, `pimShop` the recipes read | Always |
+| `brandCopy` | none: the layer generator's storefront copy | When a layer generator builds the delivered copy |
+
+### 2. Deliver, then build what was not delivered
+
+- **Built from blank with a layer generator available** to the operator: generate a rewritten
+  copy of the edition's layers from the same data file and deliver it before the first delivery.
+  Then run the set exactly as below, with no flag: each recipe recognises what the copy delivered
+  (`=` UNCHANGED, or `D` DELIVERED where the copy keys an object its own way) and writes none of
+  it again; brand, pages, de-brand, accounts and checkout are still applied. `-LayerDelivered
+  <sections>` remains for leaving a section untouched altogether (an MCP-only run cannot tell a
+  layer's categories from its own).
+- **Otherwise** (an edition delivered as shipped, or a blank site and no generator): run
+  `Invoke-DwRecipeSet.ps1 -InputPath <file>` first (writes nothing, lists every WOULD-CREATE), then
+  `-Apply`. The set runs the recipes in the index's run order, pays the debts (cache flushes, index
+  and assortment builds, one recycle) once, and verifies every recipe again. Exit 0 means every
+  object is in place and every probe passed; the last line counts the recipes that passed. A
+  `DEBT OPEN recycle` line means the host must be recycled (host-lifecycle.md, or the hosted
+  route), then the set is run again without `-Apply`.
+- `-Only <ids>` and `-Skip <ids>` narrow a rerun; `-Only <id> -PayDebts -Apply` pays one recipe's
+  host debts on their own (an index or assortment build after a hand edit).
+
+### 3. Build by hand only what no recipe covers
+
+This is the orchestrator's part of the chain, at the mid tier or above: the set run itself is
+delegated to the small tier ("Delegating the recipe set" below), and the custom work (templates,
+what the set reports BLOCKED or planned) stays with the orchestrator. The build ends with a verify
+of the set, all PASS, and the brief's checks.
+
+`Find-DwRecipe.ps1 -Function <id>` answers whether a recipe exists for a ledger function; "no
+recipe" means build it by hand from the owning skill. The index's "What stays planned" names the
+pieces a recipe leaves open (for example favourite lists and order dates, which no MCP or
+Management API write reaches). A script written for that hand work is proposed back as a recipe at
+fold-back ([`dw-demo-foldback`](../../dw-demo-foldback/SKILL.md)).
+
+### What changes per mode, environment and path
+
+| | What changes |
+|---|---|
+| Skills alone | The harness records a `recipes` step in `flow-state.json`; its gate is the set's exit 0, and the instructions-used map names the set's report |
+| `/demo:*` command set | `/demo:impact` produces the data file with the analysis; `/demo:build` runs the set after sign-off and its validation pass reads the set's summary before the acceptance criteria |
+| Local install | `-SolutionPath <solution>` lets the set recycle a loopback host itself; `-AllowSql -SqlServer -Database` adds optional read-only checks |
+| Hosted install (URL + API key) | Run the set from the demo folder (its `.mcp.json`, and `demo-host.json` for the API key), or set `DW_BASE_URL`, `DW_API_TOKEN` and, when the install exposes it, `DW_MCP_TOKEN`; no SQL. A recipe whose index row says hosted `no` reports its blocked steps; the recycle stays OPEN with the hosted route ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md)) |
+| Path A, YAML brand layer | The brand layer carries the brand: run the set with `-LayerDelivered brand` so `content.design-styles` verifies it, and apply the other sections. A data copy (catalogue, prices, users, history) needs no flag |
+| Path B, deliver then tools | Run the set with `-Apply` over the delivered edition |
+| Path C, tools only from blank | Run the set with `-Apply`; nothing is layer-delivered |
+| MCP tools only (no shell) | Follow each recipe in run order with [recipe-by-hand.md](../../dw-demo-ledger/references/recipe-by-hand.md); a recipe whose index row says MCP-only `no` leaves the named steps for an operator with the Management API |
 
 ## The build path an orchestrator sequences
 
@@ -190,7 +269,7 @@ does not. Exactly one phase blocks on a human: the impact sign-off.
 | Polish | None | freeform |
 
 **Flexibility — a demo is not a product, so the gates have escape hatches.** For a fast throwaway
-demo, drop the depth: skip the offered fix pass, or put a cheaper model on scaffold verification
+demo, drop the depth: skip the offered fix pass, or put the small tier on scaffold verification
 (see "Model tier" below). The one gate that never lifts is the impact sign-off
 — that is the decision a demo lives or dies on. Polish stays free in every mode.
 
@@ -262,20 +341,196 @@ skill frontmatter carries no model gate (agents have `model:`; skills do not), s
 scheme would rest on convention alone — and a forked recipe drifts the moment one copy is folded
 back and the other is not. The corpus already pays for exactly one source of truth per recipe.
 
-The tier decision belongs one layer up, in the thing that already has the field for it: the
-orchestrator's agent definitions (`model:` frontmatter). Place it by the *kind* of work, not by the phase name:
+The tier decision belongs one layer up, in the orchestrator: the session that drives the build
+and the sub-sessions or subagents it starts. These skills name three tiers and no model:
+
+- **top**: the provider's deepest-reasoning model. The build session, custom templates and
+  logic, design, the brief's unique ask, judging.
+- **mid**: the standard general-purpose model. Routine content such as translation batches.
+- **small**: the provider's fastest, cheapest model. Mechanical, scripted work.
+
+**Resolve the tiers from your own environment.** A tier is a role, not a product: map it to
+whatever the agent you run in offers. Read its model list (its model picker or the option it
+takes when starting a subagent or sub-session) and take the fastest, cheapest as small, the
+standard general-purpose model as mid, the deepest-reasoning as top. With one model available, every tier is that model.
+Non-normative examples: in Claude Code a subagent takes a model through its definition's
+`model:` field or the model option of the call that starts it, and `/model` lists the choices;
+in the Codex CLI the call that starts a sub-agent takes a `model` (left empty, it inherits the
+caller's), a sub-session is `codex exec -m <model> "<brief>"`, and `/model` lists the choices.
+
+Place the tier by the *kind* of work, not by the phase name:
 
 | Work | Tier | Why |
 |---|---|---|
-| Mechanical sweeps — validator runs, the integrity sweep, visual-QA detectors, scrub passes | Cheapest (Haiku-class) | the verdict is deterministic; the script holds the judgment, the model only runs it |
-| Documented recipe execution — MCP/Management API recipes that end in a verification gate | Mid (Sonnet-class) | the recipe *is* the plan, and the gate catches drift before it compounds |
-| The fresh-context validator in the automated loop | Mid, top for a high-stakes demo | its whole value is catching what the builder rationalised past |
-| Impact analysis, brand/taste calls, the visual-QA human sign-off, authoring a fold-back | Top (Opus-class) | judgment under ambiguity, where no mechanical check exists to fall back on |
+| Mechanical sweeps — validator runs, the recipe set run, the integrity sweep, visual-QA detectors, scrub passes; bulk mechanical writes (stock rows, page permissions, labels) | small | the verdict is deterministic; the script holds the judgment, the model only runs it |
+| Routine content — translation batches, copy from the brief | mid | the text is given; the checker reads the result |
+| The build session of an assignment with custom work, custom template and logic packages | top | the lower tiers did not complete the custom half ("Build construction for speed") |
+| The fresh-context validator in the automated loop, the independent checkers of a build | the builder's tier by default, never the session that built it | its whole value is catching what the builder rationalised past |
+| Impact analysis, the brief's unique ask, brand/taste calls, the visual-QA human sign-off, authoring a fold-back | top | judgment under ambiguity, where no mechanical check exists to fall back on |
+
+Measured on demo builds from blank sites, judged blind [dw 10.30 · swift 2.5]: the small
+tier ran the recipe set from a customer data file (verify, apply, pay debts, final verify) on four
+builds in 7 to 9 minutes for about 3 US cents each, with no hand writes and the same result as the
+larger tiers. Alone it could not build the rest of a brief (it duplicated data, hid prices and
+built no custom work). On those briefs the mid tier built the rest to a good standard and the top
+tier held one more acceptance check at about three times the minutes; on an assignment with real
+custom work the mid tier did not build it ("Build construction for speed" below).
 
 The rule that keeps this honest: **what a cheaper model cannot be trusted to remember, encode in
 a script or a detector — not in a longer prose rule.** A gate written as a validator holds at
 every tier; the same gate written as three more paragraphs of prose holds only at the top one,
 and silently stops holding when someone dials the tier down for cost.
+
+## Build construction for speed
+
+Measured on first builds of one nine-moment assignment on fresh sites [dw 10.30 · swift 2.5]:
+
+- A mid-tier orchestrator with the set delegated to the small tier had 9 of 9 recipes passing in
+  about ten minutes, then handed in without building the custom half, in four runs of four, also
+  when its brief said unbuilt pieces must go up to the top tier. The mid tier is not the build
+  session for an assignment with real custom work.
+- A top-tier orchestrator, with the set and the bulk mechanical writes (stock rows, page
+  permissions, labels) on the small tier and a translation batch on the mid tier, completed the
+  build in 63 minutes, 59 of them spent building the custom templates itself, one after another.
+  The lower tiers cost under 2% of the run: delegating down does not change the price, and the
+  top tier's serial custom work is the time.
+- A blind judge then held 3 of 10 checks of that build and 7 partly, where its hand-in claimed all
+  held: unreset rehearsal stock, a role that could reach another dealer's orders, documents
+  downloadable without sign-in, an empty translated catalogue, a wrong price after a customer
+  switch. The orchestrator had checked its own work.
+
+Cost is the same either way, so a build is set up for speed with reliability. The construction,
+which [`scripts/New-DwBuildBrief.ps1`](../scripts/New-DwBuildBrief.ps1) prints as the build brief:
+
+1. **The orchestrator runs on the top tier.** A lower tier started as orchestrator gets the same
+   brief plus a line that every custom package goes up to top-tier builders.
+2. **Phase 1, in parallel from minute one.** The recipe set delegate runs on the small tier
+   ("Delegating the recipe set" below) while the orchestrator reads the plan and cuts the custom
+   work into independent work packages. Each package names the files and templates, pages and
+   platform objects it alone may write, its moments and its acceptance check. No site write
+   before the delegate's apply has ended.
+3. **Phase 2, parallel builders.** When the apply has ended, one builder sub-agent per package
+   starts at the same time (at most four at once by default), the model named in every call:
+   top for custom templates and logic, small for bulk mechanical writes, mid for routine content.
+   Ownership is disjoint; a shared file (a shared stylesheet, a shared layout, the data file) has
+   one owner package or is edited only by the orchestrator at merge. A site restart or recycle,
+   an index rebuild or a global setting (currency, language layers, order states, permissions on
+   shared pages) is the orchestrator's alone, announced, between waves. A builder removes every
+   test order or cart it makes and reports every object it created.
+4. **Phase 3, independent check.** Each moment is checked on the live site by a fresh sub-agent
+   that did not build it, in parallel, in a real browser where the agent has one, signed in as
+   the personas, against the brief's observable outcomes. One more checker covers what cuts
+   across: another account's data reachable by a persona or by URL, documents reachable without
+   sign-in, leftover sample content, leftover test orders, carts or stock changes, a non-empty
+   catalogue in every language, the 390 px width. A failure goes back to its owning builder
+   once; then the orchestrator resets the demo data to the plan's opening state and verifies the
+   reset.
+5. **The hand-in reports the checkers' evidence only.** A moment holds only when a checker that
+   did not build it saw it; otherwise it is partly or not checked, with the reason. The hand-in
+   names the model that ran the set, built each package and checked each moment.
+
+## Delegating the recipe set — the orchestrator keeps the brief
+
+The orchestrating session owns the whole brief and the hand-in. The recipe set run is the part to
+delegate: it is mechanical, and the small tier runs it as well as any tier for a fraction of the
+time and price ("Model tier" above). **Delegating it never ends the orchestrator's own work.** A
+hand-over where a second session received only the first one's report was unreliable: once it
+repaired what was reported and stopped, leaving the brief's custom work unbuilt. One orchestrating
+session that ran or delegated the set and kept ownership of the brief was complete each time.
+
+**Delegating is the default, not an option.** When your agent can start a subagent or sub-session,
+the set run goes to one. Run it inline, in the same order and under the same rules, only when your
+agent has no such mechanism or the set is one or two sections.
+
+**Name the model in the call that starts the delegate.** Resolve the small tier first ("Model
+tier" above), then pass that model explicitly. A subagent started with no model, or an empty one,
+inherits the orchestrator's model: that is a second copy of yourself, not a delegation, and it
+saves neither time nor price. Measured on two first builds of one brief on two providers
+[dw 10.30 · swift 2.5]: both orchestrators had read this section, one ran the set itself on the
+top tier and the other started three subagents that all inherited its own model.
+
+**Work while it runs.** Start the delegate in the background where your agent allows it, and use
+the wait for what needs no write: read the plan and cut its custom work into work packages
+("Build construction for speed" above). Make no write to the site until the delegate's apply has ended; two writers on one
+site invalidate the set's read-backs.
+
+**A dispatched build gets the split from its brief.** This section alone does not make a session
+delegate: on two providers, sessions that had read it kept the set run on their own model, twice.
+The same sessions, given the paragraph below in the brief that started them, each started a
+sub-agent on their provider's small model for the set run [dw 10.30 · swift 2.5]. Whoever starts a
+build session (a launcher, a dispatcher, a person) therefore starts it with the brief
+[`scripts/New-DwBuildBrief.ps1`](../scripts/New-DwBuildBrief.ps1) prints, with the model ids
+resolved as "Model tier" says:
+
+```powershell
+pwsh -NoProfile -File <skills>/dw-demo-base/scripts/New-DwBuildBrief.ps1 -OrchestratorModel <top> -SmallModel <small> [-MidModel <mid>] [-BuilderModel <model> -CheckerModel <model> -MaxParallel <n>] [-TopModel <top> -EscalateFor <packages>] [-DataFile <file> -SkillsPath <skills> -LogFolder <folder>] [-OutFile <brief.md>]
+```
+
+It opens with this paragraph, the small model's id named before "the smallest, fastest model your
+agent offers", and adds the delegate's run order, the three phases of "Build construction for
+speed" and the hand-in. A `-TopModel` different from `-OrchestratorModel` (a lower tier started
+as orchestrator) adds the line that every custom package goes up to it, and the hand-in names
+them; `-EscalateFor` names custom packages in the builder line; `-Phase plan` prints a read-only
+planning brief.
+
+> You are the orchestrator. Keep the brief and the custom work yourself. Hand the recipe set run
+> (verify, apply once, pay debts, final verify) to a sub-agent on the smallest, fastest model your
+> agent offers, and name that model in the call that starts the sub-agent: a call without a model
+> inherits yours. Do the same for other mechanical work. In your result, say which model ran the
+> recipe set and which model built the rest.
+
+**Say who ran it.** The hand-in names the model that ran the set and the model that built the
+rest, so the next build can check the split was real. The delegate passes `-RunBy <its model>` (or
+sets `DW_RECIPE_RUN_BY`) to every set run, and the summary prints `run by: <model>`, or
+`run by: not stated` when it was left out.
+
+**Give the delegate** (a sub-session or subagent on the small tier):
+
+- the absolute paths of the customer data file, the skills checkout and a folder for its logs and
+  reports;
+- the demo folder: the set reads the site connection itself from the folder that holds the
+  site's `.mcp.json` (and the optional host facts file `demo-host.json`; dw-demo-ledger
+  [recipes.md](../../dw-demo-ledger/references/recipes.md) "Connection"), so the delegate runs it there or
+  passes `-SiteFolder <folder>`; `DW_BASE_URL`, `DW_MCP_TOKEN` and `DW_API_TOKEN` are needed only
+  where no such folder exists, and win over it when set. A mid- or small-tier delegate did not
+  find the keys on its own: two first builds ran the set with no connection (0 of 11, and 2 of 9
+  recipes) until the runner read the folder itself;
+- the secrets, only when this session has them: `DW_RECIPE_SECRETS` and `DW_PERSONA_CREDENTIALS`
+  come from the environment alone (no file form), so start the delegate's commands from the same
+  shell environment and never paste a value into the brief;
+- `-SolutionPath <solution>` for a loopback host it may recycle and `-AllowSelfSignedCertificate`
+  for a local self-signed one;
+- the run order, each run's output saved to a log, with `-ReportPath <folder>/<run>.json` and
+  `-RunBy <its model>`:
+  1. **verify**: `Invoke-DwRecipeSet.ps1 -InputPath <file>`;
+  2. **apply once**: the same with `-Apply`;
+  3. **pay debts**: for each `DEBT OPEN` or `DEBT FAIL` line, `-Only <owner> -PayDebts -Apply`
+     once;
+  4. **final verify**: step 1 again;
+- the rules: no write by hand (no MCP write tool, no SQL, no admin UI), no edit to the data file
+  or a recipe, no fix and no retry outside that order. A failure is reported, not repaired.
+
+**Demand back**: the log and report path of every run, the final summary table as printed, every
+row whose Result is not PASS and every FAIL, OPEN, BLOCKED and `DEBT` line verbatim with its
+reason, the last line (`recipe set: <n> of <m> recipes passed`) and each run's exit code.
+
+**Read the report**, then act on it yourself:
+
+| Reported | Means | Orchestrator's next step |
+|---|---|---|
+| PASS | built, read back and proven | nothing |
+| DELIVERED (`D`) | a layer copy delivered it | nothing; never write it again |
+| SKIPPED | `-Skip`, or the section lacks a required member | intended: nothing; else fix the input and re-run that recipe |
+| BLOCKED (`B`) | no eligible binding, a collision, or a blocked dependency | input or grant: fix it and re-run that recipe; no binding: build it by hand from the owning skill |
+| FAIL | an observation disagrees | read the reason; fix the input or the grant and re-run that recipe; a defect in the recipe itself is fold-back material, and the hand build covers it meanwhile |
+| OPEN | an observation could not be made, or a debt is unpaid | pay the debt (`-Only <owner> -PayDebts -Apply`, or the recycle it names), then verify that recipe |
+| NOT RUN | the run stopped before the recipe | fix the fault the log names and re-run |
+
+**Re-run one recipe instead of fixing by hand**: `Invoke-DwRecipeSet.ps1 -InputPath <file> -Only
+<id>`, then with `-Apply`. A hand fix to an object a recipe owns is undone or flagged by the next
+apply and leaves the final verify proving the wrong thing; build by hand only what no recipe covers.
+Then run phases 2 and 3 of "Build construction for speed" above: the builders, the independent
+checkers and the reset. The hand-in reports what the checkers saw, and it is the orchestrator's.
 
 ## Discovery prompts (impact-analysis input)
 

@@ -7,6 +7,12 @@ PowerShell 7. Owning reference: ../references/contract.md. Rejects path escapes,
 . ./Ledger.Core.ps1
 #>
 #Requires -Version 7.0
+function Split-LedgerList {
+    # A list parameter as it arrives: through pwsh -File a list is one text ("a,b" or "'a','b'"), so every element
+    # is split on commas and stripped of the quotes around it; empty pieces are dropped.
+    param([object[]]$Value)
+    return , @($Value | Where-Object { $null -ne $_ } | ForEach-Object { ([string]$_).Split(',') } | ForEach-Object { $_.Trim().Trim("'", '"').Trim() } | Where-Object { $_ })
+}
 function Read-LedgerJson {
     param([string]$Path, [string]$Schema)
     # Contract failures are IO.InvalidDataException: their text names the cause and holds no credential, so the runner may print it.

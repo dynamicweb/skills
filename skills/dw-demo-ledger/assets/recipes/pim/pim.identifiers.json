@@ -1,0 +1,283 @@
+{
+  "schema": 1,
+  "id": "pim.identifiers",
+  "name": "Catalogue: storefront groups, products by number in their group and data model, spec values, images with a default, stock",
+  "functions": ["pim.identifiers", "pim.images", "commerce.stock-levels"],
+  "skill": "dw-demo-pim",
+  "inputs": {"section": "catalogue", "required": ["shop", "groups", "products"]},
+  "dependsOn": [
+    {"recipe": "pim.data-models", "why": "Products are placed in the data models and write the spec fields that recipe creates."}
+  ],
+  "modes": {
+    "mcpOnly": {"usable": true, "reason": "Every step finds, writes and reads back with MCP tools; the image files are read from the input folder by the runner."},
+    "hosted": {"usable": true, "reason": "Nothing needs SQL; the index debts are paid through the Management API or the MCP index tools."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "models",
+      "title": "Find the data model of each group's top group (the pim.data-models recipe creates them)",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "find": {"bindings": [
+        {"id": "mcp-shops", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{step.models[item.parent].name|item.name}"}, "produces": {"id": "id", "name": "name", "categoryId": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-model-name", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "update": {"operation": "patch_data_models", "arguments": {"requests": [{"dataModelId": "{found.id}", "patch": {"name": "{found.name}"}}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{step.models[item.parent].name|item.name}"}, "produces": {"id": "id", "name": "name", "categoryId": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "A subgroup's products take its top group's data model: the top group is found by its own name and a subgroup by its parent's model name, so top groups come before their subgroups in the input. This step creates no data model; an absent one blocks (run pim.data-models first).",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "categories",
+      "title": "Find the product category each group's data model is bound to",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "find": {"bindings": [
+        {"id": "admin-categories", "surface": "admin-api", "status": "implemented", "operation": "ProductCategoriesAll", "arguments": {}, "rows": "model.data", "match": {"id": "{step.models.categoryId}"}, "produces": {"id": "id"}, "source": "skills/dw-data-access/references/recipes-pim.md"},
+        {"id": "mcp-model-category", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{step.models.name}"}, "produces": {"id": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ], "delivered": [
+        {"id": "layer-model-category", "surface": "mcp", "status": "implemented", "operation": "get_shops", "arguments": {"includeGroupHierarchy": true}, "rows": "data[*].dataModels[*].dataModels", "match": {"name": "{step.models.name}"}, "produces": {"id": "categoryId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [],
+      "trap": "A category the pim.data-models recipe creates is a CategoryFields category, which ProductCategoriesAll lists. A layer copy binds its data models to categories that read does not list, so the category is found through the data model (find.delivered) and reported DELIVERED: the spec values of a delivered category are the layer's, and no MCP read returns them. MCP-only has no category read and takes the data model's category as found.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "groups",
+      "title": "Ensure each storefront group by its key as group id, under its parent",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "find": {"bindings": [
+        {"id": "mcp-groups", "surface": "mcp", "status": "implemented", "operation": "get_groups", "arguments": {"languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"id": "{item.key}"}, "compare": {"name": "{item.name}", "parentGroupId": "{item.parent|null}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ], "delivered": [
+        {"id": "layer-group-name", "surface": "mcp", "status": "implemented", "operation": "get_groups", "arguments": {"languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"name": "{item.name}", "shopId": "{input.shop}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-group", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "save_groups", "arguments": {"groups": [{"id": "{item.key}", "name": "{item.name}", "description": "{item.description|null}", "shopId": "{input.shop}", "parentGroupId": "{item.parent|null}", "languageId": "{build.defaultLanguage}"}]}},
+          "update": {"operation": "save_groups", "arguments": {"groups": [{"id": "{item.key}", "name": "{item.name}", "shopId": "{input.shop}", "parentGroupId": "{item.parent|null}", "languageId": "{build.defaultLanguage}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_groups", "arguments": {"languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"id": "{item.key}"}, "expect": {"name": "{item.name}", "parentGroupId": "{item.parent|null}"}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "save_groups keeps a caller-supplied id, so the group key is the group id on every build this recipe makes. A layer copy keys its groups its own way; a group of the input's name in the shop under another id is that delivery (find.delivered, DELIVERED, never written), and later steps place products in it by its id.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "assortment",
+      "title": "Join each group to the storefront assortment",
+      "forEach": "groups[*]",
+      "key": "{item.key}",
+      "skipWhen": {"path": "input.assortmentIds", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-group-assortments", "surface": "mcp", "status": "implemented", "operation": "get_assortment_relations_by_group_id", "arguments": {"groupId": "{step.groups.id}"}, "rows": "data", "match": {"assortmentId": "{input.assortmentIds[0]}"}, "compare": {"excluded": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-join", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "assign_groups_to_assortment", "arguments": {"relations": [{"assortmentId": "{input.assortmentIds[0]}", "groupId": "{step.groups.id}", "excluded": false}]}},
+          "update": {"operation": "assign_groups_to_assortment", "arguments": {"relations": [{"assortmentId": "{input.assortmentIds[0]}", "groupId": "{step.groups.id}", "excluded": false}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_assortment_relations_by_group_id", "arguments": {"groupId": "{step.groups.id}"}, "rows": "data", "match": {"assortmentId": "{input.assortmentIds[0]}"}, "expect": {"excluded": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "While any assortment is active the storefront lists only products of an assortment the visitor may see, although the delivery API query still returns them. Every group joins, subgroups too, because an assortment that does not include subgroups covers only the groups related to it.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "products",
+      "title": "Ensure each product by number with its name and texts",
+      "forEach": "products[*]",
+      "key": "{item.number}",
+      "find": {"bindings": [
+        {"id": "mcp-sku", "surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.number}"], "languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"number": "{item.number}"}, "compare": {"name": "{item.name}", "shortDescription": "{item.short|\"\"}", "longDescription": "{item.long|\"\"}", "isActive": true}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-product", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "create_products", "arguments": {"products": [{"number": "{item.number}", "name": "{item.name}", "shortDescription": "{item.short|\"\"}", "longDescription": "{item.long|\"\"}", "seoTitle": "{item.metaTitle|\"\"}", "seoDescription": "{item.metaDescription|\"\"}", "isActive": true, "languageId": "{build.defaultLanguage}"}]}},
+          "update": {"operation": "patch_products_safe", "arguments": {"products": [{"id": "{found.id}", "name": "{item.name}", "shortDescription": "{item.short|\"\"}", "longDescription": "{item.long|\"\"}", "isActive": true, "languageId": "{build.defaultLanguage}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.number}"], "languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"number": "{item.number}"}, "expect": {"name": "{item.name}", "shortDescription": "{item.short|\"\"}", "isActive": true}, "produces": {"id": "id"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "The product id is minted (PROD<n>) and read back by number. The list price is the prices recipe's: this recipe sends no defaultPrice. EAN and weight are EcomProducts scalars no MCP product write takes.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "placement",
+      "title": "Place each product in its group as its primary group",
+      "forEach": "products[*]",
+      "key": "{item.number}",
+      "find": {"bindings": [
+        {"id": "mcp-product-groups", "surface": "mcp", "status": "implemented", "operation": "get_groups_for_product", "arguments": {"productId": "{step.products.id}"}, "rows": "data", "match": {"id": "{step.groups[item.group].id}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-assign-group", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "assign_products_to_group", "arguments": {"relations": [{"productId": "{step.products.id}", "groupId": "{step.groups[item.group].id}", "isPrimary": true}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_groups_for_product", "arguments": {"productId": "{step.products.id}"}, "rows": "data", "match": {"id": "{step.groups[item.group].id}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "model-assignment",
+      "title": "Put each product in its top group's data model",
+      "forEach": "products[*]",
+      "key": "{item.number}",
+      "find": {"bindings": [
+        {"id": "mcp-product-groups", "surface": "mcp", "status": "implemented", "operation": "get_groups_for_product", "arguments": {"productId": "{step.products.id}"}, "rows": "data", "match": {"id": "{step.models[item.group].id}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-assign-model", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "assign_data_model_to_products", "arguments": {"assignments": [{"dataModelId": "{step.models[item.group].id}", "productIds": ["{step.products.id}"]}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_groups_for_product", "arguments": {"productId": "{step.products.id}"}, "rows": "data", "match": {"id": "{step.models[item.group].id}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "specs",
+      "title": "Write each spec value into the product's category field",
+      "forEach": "products[*].specs[*]",
+      "key": "{parent.number}/{item.key}",
+      "deliveredWith": {"step": "categories", "key": "{parent.group}"},
+      "find": {"bindings": [
+        {"id": "mcp-product-fields", "surface": "mcp", "status": "implemented", "operation": "get_products_by_ids", "arguments": {"ids": ["{step.products[parent.number].id}"], "languageId": "{build.defaultLanguage}"}, "rows": "data[*].customFields", "match": {"id": "ProductCategory|{step.categories[parent.group].id}|{item.key}"}, "compare": {"value": "{item.value}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-spec", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "patch_products_safe", "arguments": {"products": [{"id": "{step.products[parent.number].id}", "languageId": "{build.defaultLanguage}", "customFields": [{"id": "ProductCategory|{step.categories[parent.group].id}|{item.key}", "value": "{item.value}"}]}]}},
+          "update": {"operation": "patch_products_safe", "arguments": {"products": [{"id": "{step.products[parent.number].id}", "languageId": "{build.defaultLanguage}", "customFields": [{"id": "ProductCategory|{step.categories[parent.group].id}|{item.key}", "value": "{item.value}"}]}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_products_by_ids", "arguments": {"ids": ["{step.products[parent.number].id}"], "languageId": "{build.defaultLanguage}"}, "rows": "data[*].customFields", "match": {"id": "ProductCategory|{step.categories[parent.group].id}|{item.key}"}, "expect": {"value": "{item.value}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "A category field value is written with its full system name; get_products_by_sku returns no customFields, get_products_by_ids does.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "image-files",
+      "title": "Upload each image file from the input folder into /Files/Images",
+      "forEach": "products[*].images[*]",
+      "key": "{parent.number}/{item}",
+      "find": {"bindings": [
+        {"id": "mcp-files", "surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{basename:item}", "isDirectory": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ], "delivered": [
+        {"id": "layer-product-image", "surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products[parent.number].id}"}, "rows": "data", "matchSuffix": {"value": "/{basename:item}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-upload-file", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "upload_file", "arguments": {"path": "/Files/Images/{basename:item}", "content": "{base64:item}", "isBase64": true, "overwrite": false}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "list_files", "arguments": {"path": "/Files/Images"}, "rows": "data", "match": {"name": "{basename:item}", "isDirectory": false}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "Image file names share /Files/Images, so they must be unique across the catalogue; a file already there is used as it is. Up to MCP 0.6.3 upload_product_images refuses a file name that exists (File already exists and will not be overwritten; 0.6.6 accepts it), so a rebuild uploads the file once and attaches it with add_product_image, which serves both releases.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "images",
+      "title": "Attach each image to its product",
+      "forEach": "products[*].images[*]",
+      "key": "{parent.number}/{item}",
+      "find": {"bindings": [
+        {"id": "mcp-images", "surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products[parent.number].id}"}, "rows": "data", "match": {"value": "/Files/Images/{basename:item}"}, "produces": {"detailId": "detailId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ], "delivered": [
+        {"id": "layer-product-image", "surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products[parent.number].id}"}, "rows": "data", "matchSuffix": {"value": "/{basename:item}"}, "produces": {"detailId": "detailId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-attach-image", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "add_product_image", "arguments": {"request": {"productId": "{step.products[parent.number].id}", "filePath": "/Files/Images/{basename:item}", "setAsPrimary": false}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products[parent.number].id}"}, "rows": "data", "match": {"value": "/Files/Images/{basename:item}"}, "produces": {"detailId": "detailId"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "trap": "upload_product_images makes a product's first image primary on its own; add_product_image leaves the product without one, so the default-image step names the input's first image.",
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "default-image",
+      "title": "Make each product's first image its default",
+      "forEach": "products[*]",
+      "key": "{item.number}",
+      "deliveredWith": {"step": "images", "key": "{item.number}/{item.images[0]}"},
+      "find": {"bindings": [
+        {"id": "mcp-primary", "surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products.id}"}, "rows": "data", "match": {"isPrimary": true}, "compare": {"value": "/Files/Images/{basename:item.images[0]}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-set-primary", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "set_product_primary_image", "arguments": {"request": {"productId": "{step.products.id}", "detailId": "{step.images[item.number,item.images[0]].detailId}"}}},
+          "update": {"operation": "set_product_primary_image", "arguments": {"request": {"productId": "{step.products.id}", "detailId": "{step.images[item.number,item.images[0]].detailId}"}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_product_images", "arguments": {"productId": "{step.products.id}"}, "rows": "data", "match": {"isPrimary": true}, "expect": {"value": "/Files/Images/{basename:item.images[0]}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    },
+    {
+      "id": "stock",
+      "title": "Set each product's stock",
+      "forEach": "products[*]",
+      "key": "{item.number}",
+      "skipWhen": {"path": "item.stock", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-stock", "surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.number}"], "languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"number": "{item.number}"}, "compare": {"stock": "{item.stock}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-set-stock", "surface": "mcp", "status": "implemented", "source": "skills/dw-pim-modelling/references/model-writes.md",
+          "create": {"operation": "patch_products_safe", "arguments": {"products": [{"id": "{step.products.id}", "stock": "{item.stock}", "languageId": "{build.defaultLanguage}"}]}},
+          "update": {"operation": "patch_products_safe", "arguments": {"products": [{"id": "{step.products.id}", "stock": "{item.stock}", "languageId": "{build.defaultLanguage}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_products_by_sku", "arguments": {"skus": ["{item.number}"], "languageId": "{build.defaultLanguage}"}, "rows": "data", "match": {"number": "{item.number}"}, "expect": {"stock": "{item.stock}"}, "source": "skills/dw-pim-modelling/references/model-writes.md"}}
+      ],
+      "source": "skills/dw-pim-modelling/references/model-writes.md"
+    }
+  ],
+  "debts": ["assortments", "flush:Dynamicweb.Ecommerce.Products.ProductService", "flush:Dynamicweb.Ecommerce.Products.Categories.ProductCategoryFieldValueService", "index:ProductsFrontend/Products.index", "index:ProductsBackend/Products.index"],
+  "verify": {
+    "checkIds": ["pim.identifiers.number-missing", "pim.identifiers.number-duplicates", "pim.images.image-share", "pim.images.images-without-default", "commerce.stock-levels.in-stock"],
+    "probes": [
+      {
+        "id": "listed-in-group",
+        "title": "Each product is in the frontend index and listed in its group",
+        "forEach": "products[*]",
+        "minimumSubjects": 1,
+        "pollSeconds": 60,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "query", "arguments": {"RepositoryName": "ProductsFrontend", "QueryName": "Products", "GroupID": "{step.groups[item.group].id}", "q": "{item.number}"}, "rows": "results", "match": {"ID": "{step.products[item.number].id}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-search-indexing/SKILL.md"}
+        ]
+      },
+      {
+        "id": "image-served",
+        "title": "Each product's default image answers 200",
+        "forEach": "products[*]",
+        "deliveredWith": {"step": "image-files", "key": "{item.number}/{item.images[0]}"},
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Files/Images/{basename:item.images[0]}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      },
+      {
+        "id": "completeness",
+        "title": "A completeness rule reaches each product with specs through its data model",
+        "forEach": "products[*]",
+        "skipWhen": {"path": "item.specs", "exists": false},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_completeness_status", "arguments": {"productId": "{step.products[item.number].id}", "shopId": "{input.shop}", "groupIds": ["{step.models[item.group].id}"]}, "rows": "$", "match": {"value": -1}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      },
+      {
+        "id": "specs-delivered",
+        "title": "The delivery API shows each product's spec display group with its values",
+        "forEach": "products[*]",
+        "skipWhen": {"path": "item.specs", "exists": false},
+        "deliveredWith": {"step": "categories", "key": "{item.group}"},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "dwapi-get", "operation": "ecommerce/products/{productId}", "arguments": {"productId": "{step.products[item.number].id}", "LanguageId": "{build.defaultLanguage}"}, "rows": "fieldDisplayGroups[*]", "match": {"id": "{step.categories[item.group].id}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-pim-modelling/references/model-writes.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "pim.identifiers.1-verify.json (WOULD-CREATE but the existing data models and image files), pim.identifiers.2-apply.json (37 of 37 from empty, debts paid: assortment build, two cache flushes, two index builds), pim.identifiers.3-verify.json and pim.identifiers.4-apply-again.json (32 of 32, nothing written), pim.identifiers.5-mcponly-apply.json (every step from empty with MCP only, the assortment and index builds through MCP; the two flushes OPEN and the delivery probes not observable, as declared); the products were in the frontend index in their group and the public assortment with their spec values, the delivery API showed the spec display group, the images answered 200 and get_completeness_status answered a percentage"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 29 of 29, debts paid (assortment build, two flushes, two index builds); MCP-only 19 of 29, the steps behind the data models BLOCKED as pim.data-models is not MCP-only. upload_product_images now accepts a file name that exists (re-measured on 0.6.6); the recipe keeps upload_file plus add_product_image."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "the same delivered-copy site: verify 101 of 101, products, placements, model assignments and stock UNCHANGED, the groups found by name in the shop, the categories through the data model, the image files and images by file name on the product (DELIVERED, 102 rows), no WOULD-CREATE; -Apply wrote nothing (products 12, group relations 30, images 20 before and after). The probes run within one poll budget each: 44 s for the whole set verify where one verify had taken 997 s. From empty [mcp 0.6.6-BETA]: 32 of 32, apply again nothing written."}
+  ],
+  "traps": [
+    "Run pim.data-models first: this recipe places products in the data models and writes the spec fields that recipe creates.",
+    "On a build whose catalogue a layer copy delivered, the products are found by number, the groups by name in the shop, the images by file name on the product and the category through the data model; what the copy keys its own way is DELIVERED and never written a second time, and the probes prove the products are indexed, listed in their group and scored for completeness.",
+    "Documents are not in this recipe: no MCP tool or simple Management API command creates the asset category they belong in.",
+    "The storefront group page lists a product only when it is in an assortment the visitor may see and, measured, once it has a price: with the product indexed in its group and in the public assortment but without a price the page answered No products found while every product it listed had one. The prices recipe sets the price; the listed-in-group probe reads the index query the page uses.",
+    "Spec values written by patch_products_safe reach the index only after the product and category-field value caches are flushed, so the flush debts run before the index builds.",
+    "The completeness probe: get_completeness_status needs a shop that exists, and with groupIds it answers by the groups passed: the same figure for the PIM shop and the storefront shop, -1 for a group without a rule (measured on 10.30.6). So the probe asks in the catalogue's own shop (input.shop), which the groups step proves exists, never in build.pimShop: a layer copy keys the PIM shop its own way (a build whose input named PIM met a site whose PIM shop was stored under another id), and a shop that does not exist answers an error result, not a figure (measured on 10.30.8, where the catalogue's shop and the copy's PIM shop both gave 100 for the same product and model)."
+  ]
+}

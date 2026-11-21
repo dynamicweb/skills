@@ -35,6 +35,22 @@ documented order (gate every step, persist progress to `.demo/<slug>/flow-state.
 orchestrator abstraction (native command set and the standalone harness) is owned by
 [`../dw-demo-base/references/orchestrator.md`](../dw-demo-base/references/orchestrator.md).
 
+## Recipes first
+
+The storefront functions a Swift demo build repeats have proven recipes; run them from the customer
+data file with `Invoke-DwRecipeSet.ps1` ([dw-demo-base "Build from the library"](../dw-demo-base/references/orchestrator.md#build-from-the-library)) before the
+prose procedures below, which stay the reference for hand work and for what a recipe leaves open
+([recipe index](../dw-demo-ledger/references/recipe-index.md)).
+
+| Recipe | Input | What it builds and proves | What stays by hand |
+|---|---|---|---|
+| `content.design-styles` | `brand` | Logo, favicon and font files; fonts, typography, buttons and colour schemes under a net-new style id; the website wired to them; header and footer logo and row schemes. Probes: the generated sheets, fonts, logo and favicon are served, the storefront paths render. Owes a recycle | The custom brand sheet and head include (a theme layer or file deploy); the painted result in a browser (visual QA) |
+| `content.page-seo` | `debrand` | Every page text and website setting that still shows a former name, replaced and read back. Probes: the rendered title and headings exclude it | Website and shop names are reported, not renamed; mail templates are checked by hand |
+| `users.accounts` | `users.accounts` | Account and staff groups, the account type, users with passwords, memberships, assortment access, the impersonation grant. Probes: sign-in, membership, grant direction | Persona presentation and sign-in profiles ([references/customer-center.md](references/customer-center.md)) |
+| `commerce.customer-prices` | `prices` | Default prices, quantity tiers, group and contract prices. Probes: what the anonymous visitor and the signed-in buyer are charged | Discounts and vouchers |
+| `orders.completed-orders` | `history` | The order number prefix; the buyer's orders lined at the buyer's price, placed, completed and stated; quotes; with `reset: true` it removes the buyer's orders and quotes the input does not name. Probes: the buyer's customer centre lists them | Order dates, the number counter, favourite lists (no MCP or Management API write) |
+| `content.pages` | `content.pages` | Pages under their parent, title and slug, grid rows, paragraphs and item fields. Probes: one page per key, the row container, the page renders | Designed page layout beyond rows and paragraphs |
+
 ## Step 0 — Load the Swift baseline (every Swift demo)
 
 Before any frontend work (templates, paragraphs, re-skin), load the Swift content baseline into the host's project DB. Swift demos depend on `Swift-v2_*` item types, Swift paragraph wiring, and the **content rows** (Area, Pages, grid-rows, paragraphs) that the baseline ships. `dw-demo-base` deliberately does NOT deserialize — that step lives here.
@@ -77,6 +93,7 @@ Each row is a trap a build rediscovered by trial although the owning reference a
 | HTTP 200 with a `ConverterException` block where a new `Swift-v2_Text` should be | Shipped `ButtonData` defaults: blank `FirstButton`/`SecondButton` in the same write. [cheat-sheet.md](references/cheat-sheet.md) "Build recipe" |
 | Lorem or stock copy under a heading you never set | `Swift-v2_Text.Subtitle` ships a default. [paragraphs.md](references/paragraphs.md) "A field you never set" |
 | A new page renders an empty `<main>`, no error | Row saved in a container the layout never renders; Swift 2 uses `Grid`. [`dw-swift-page-blocks`](../dw-swift-page-blocks/SKILL.md) `save_grid_rows` |
+| A signed-in buyer's product list says "No products found" | Lists are assortment-gated, and read the index the catalog paragraph names. [storefront-browser-checks.md](references/storefront-browser-checks.md) "Traps" |
 | Wrong mobile header at 390px in Playwright | The header is chosen by user agent: use a device descriptor, not a resize. [mobile-pass.md](references/mobile-pass.md) item 5 |
 | A CSS rule has no effect, no error | Nested `:has()` drops the whole rule. [re-skin.md](references/re-skin.md) "Conditional-collapse CSS" and "CSS that silently never reaches the browser" |
 | Hand-built PLP/PDP renders `RenderGrid` with page id 0, or nothing | Swift's catalog is a fixed page shell. [`dw-swift-migrate-site`](../dw-swift-migrate-site/SKILL.md), content-rebuild reference, "The product catalog shell" |
@@ -113,6 +130,7 @@ Each reference is an independent file owned end-to-end by a single topic; cross-
 | **Choose the branding path BEFORE the first brand write**: YAML brand layer first (the default), deserialize-then-tools, or tools only; the measured cost of each and the four conditions under which the tool path is right | **[`../dw-demo-base/references/branded-demo-paths.md`](../dw-demo-base/references/branded-demo-paths.md)** |
 | Re-skin a demo (configuration → `<customer>_custom.css` → content-layout escalation ladder; the never-write-to-stock-`custom.css` hard rule) | references/re-skin.md |
 | **Mobile pass** — make the storefront fit the phone canvas: the `document.body.scrollWidth`-not-documentElement measure (`overflow-x:hidden` masks the stretch), widest-offender iteration, the 390+430 real-device finish; the Swift 2.4 trap catalogue (fixed-width mega-menu, non-wrapping `NColumnsFlex` + `flexibleColumns`, `.flex-fill` beating fixed bases, force-open spec accordions, inline-hardcoded logo width, anon CTA in `productPRICE`); and the "verify first — theme-default ≥1.2.0 already ships most fixes" caveat. Triggers: "mobile view", "mobile pass", "canvas stretch", "overflow at 390", mega-menu won't collapse | references/mobile-pass.md |
+| **Drive a storefront check in a browser** (Playwright): cookie banner, sign-in, product list and page, add to cart, mini cart, cart, the CartV2 checkout steps and the receipt, each selector and path measured; the traps (assortment-gated lists and the index the catalog paragraph names, prices hidden from anonymous visitors, the checkout reading the user's own address, a cart that keeps its creation-time customer fields) | references/storefront-browser-checks.md |
 | **Header menu: make it read as a menu** — why a fresh bar is flat (childless top nodes), the `save_groups` nav-depth recipe, the affordance CSS shipped inside `theme-default`'s `default_custom.css`, and the three interaction platform-truths (Popper-gap bridge, `::before`=icon/`::after`=underline caret collision, dropdown `min-width`); opt-in `data-nav-icon` icons bound to DW stock `/Files/Images/Icons` | references/header-menu.md |
 | **A page passes every content assert and still looks or behaves wrong** — horizontal-overflow diagnosis (three numbers, offender by right edge, both auth states), the visually-hidden containment rule, hit-testing a stretched-link card, contrast | [`layout-verification.md`](../dw-swift-building/references/layout-verification.md) |
 | **Grid-row mechanics** — what `GridRowCopy` carries from the donor and how to normalise it, the column-binding law, the spacing an inert row still pays, idempotent row minting | [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md) |

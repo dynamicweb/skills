@@ -1,0 +1,384 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/dynamicweb/skills/skills/dw-demo-ledger/assets/recipe.schema.json",
+  "title": "Recipe: the replayable form of one ledger function",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "name", "functions", "skill", "inputs", "modes", "steps", "debts", "verify", "provenOn", "traps"],
+  "properties": {
+    "schema": {"const": 1},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z0-9-]+$"},
+    "name": {"type": "string", "minLength": 1},
+    "functions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z0-9.-]+$"}},
+    "skill": {"type": "string", "pattern": "^dw-[a-z]+-[a-z0-9-]+$"},
+    "inputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["section", "required"],
+      "properties": {
+        "section": {"type": "string", "minLength": 1},
+        "required": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "modes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mcpOnly", "hosted", "local", "layerDelivered"],
+      "properties": {
+        "mcpOnly": {"$ref": "#/definitions/mode"},
+        "hosted": {"$ref": "#/definitions/mode"},
+        "local": {"type": "object", "additionalProperties": false, "required": ["usable"], "properties": {"usable": {"const": true}, "reason": {"type": "string"}}},
+        "layerDelivered": {"enum": ["verify", "apply", "both"]}
+      }
+    },
+    "steps": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/step"}},
+    "debts": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^(flush:[A-Za-z][A-Za-z0-9_.]*|index:[A-Za-z0-9 _-]+/[A-Za-z0-9 _.-]+\\.index|assortments|recycle)$"}
+    },
+    "verify": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkIds", "probes"],
+      "properties": {
+        "checkIds": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "probes": {"type": "array", "items": {"$ref": "#/definitions/probe"}}
+      }
+    },
+    "provenOn": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dwVersion", "mcpVersion", "date", "evidence"],
+        "properties": {
+          "dwVersion": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+"},
+          "mcpVersion": {"type": "string", "minLength": 1},
+          "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+          "evidence": {"type": "string", "minLength": 1},
+          "modes": {"type": "object", "additionalProperties": false, "required": ["mcpOnly", "hosted"], "description": "The modes proven on this entry's MCP version, where they differ from the conservative top-level modes (the oldest proven version); the validator computes them from the bindings and their mcpSince.", "properties": {"mcpOnly": {"type": "boolean"}, "hosted": {"type": "boolean"}}}
+        }
+      }
+    },
+    "traps": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "dependsOn": {
+      "description": "Recipes whose objects this one needs, so a recipe set runs them first. debtsPaid names debts of that recipe that must be paid before this one runs, because a step here reads what they refresh.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["recipe", "why"],
+        "properties": {
+          "recipe": {"type": "string", "pattern": "^[a-z][a-z0-9-]*\\.[a-z0-9-]+$"},
+          "why": {"type": "string", "minLength": 1},
+          "debtsPaid": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "runsLast": {"description": "Why a recipe set runs this recipe after every other one (a de-brand replaces text the others may write).", "type": "string", "minLength": 1},
+    "respell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step", "from", "to"],
+      "description": "Once the step has run, every text of the input section that starts with from in other letter case starts with to instead: a folder that already exists with other letter case keeps its real spelling in every later write, compare and read.",
+      "properties": {
+        "step": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1}
+      }
+    }
+  },
+  "definitions": {
+    "mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["usable", "reason"],
+      "properties": {"usable": {"type": "boolean"}, "reason": {"type": "string", "minLength": 1}}
+    },
+    "mapSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "key", "value"],
+      "properties": {
+        "from": {"description": "A token or object resolving to {name: value}."},
+        "key": {"type": "string", "minLength": 1},
+        "value": {"type": "string", "minLength": 1}
+      }
+    },
+    "skipWhen": {
+      "description": "One condition, or a list that skips when any of them holds.",
+      "oneOf": [{"$ref": "#/definitions/condition"}, {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/condition"}}]
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^(input|item|parent)(\\.[A-Za-z0-9_]+)+$"},
+        "exists": {"type": "boolean"},
+        "equals": {},
+        "notEquals": {},
+        "contains": {"type": "string"}
+      },
+      "minProperties": 2,
+      "maxProperties": 2
+    },
+    "plannedRule": {
+      "if": {"properties": {"status": {"const": "planned"}}, "required": ["status"]},
+      "then": {"required": ["reason"]}
+    },
+    "read": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface", "status", "source"],
+      "properties": {
+        "id": {"type": "string"},
+        "surface": {"enum": ["mcp", "admin-api", "sql", "dwapi"]},
+        "status": {"enum": ["implemented", "planned"]},
+        "reason": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "minLength": 1},
+        "mcpSince": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+", "description": "MCP only: the add-in version this binding is first proven on. Read by the validator alone (modes per provenOn version); the runner never compares versions."},
+        "requiresSchema": {"type": "object", "additionalProperties": false, "minProperties": 1, "description": "MCP only: the binding runs only when its tool's tools/list schema carries every member named (input: the arguments; output: the structured result), as dotted paths with [*] for array items; otherwise the runner falls to the next binding.", "properties": {"input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "output": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}},        "handler": {"enum": ["dwapi-get", "dwapi-signed-in-get", "dwapi-sign-in", "dwapi-persona-sign-in", "storefront-links"], "description": "storefront-links: the anonymous storefront page at arguments.path, rendered; the rows (links) are the links {href, text} inside the region the operation names (footer or header, on recipeStorefrontRegions)."},
+        "signIn": {"type": "object", "additionalProperties": false, "required": ["username", "password"], "description": "dwapi-signed-in-get only: the user the read signs in as; the password is a {secret.*} token.", "properties": {"username": {"type": "string", "minLength": 1}, "password": {"type": "string", "pattern": "^\\{secret\\.[^{}]+\\}$"}}},
+        "operation": {"type": "string"},
+        "arguments": {"type": "object"},
+        "query": {"type": "string"},
+        "parameters": {"type": "object", "propertyNames": {"pattern": "^[A-Za-z][A-Za-z0-9]*$"}},
+        "localOnly": {"type": "boolean"},
+        "rows": {"type": "string"},
+        "match": {"type": "object"},
+        "ignoreCase": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "match members compared as text ignoring case, for a name the platform stores with its own letter case (a folder)."},
+        "matchSuffix": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string", "minLength": 1}, "description": "A row matches only when each named member's text ends with the given text, ignoring case (a file a layer stored under its own folder, found by its file name). A row without the member does not match."},
+        "compare": {"type": "object"},
+        "expect": {"type": "object"},
+        "unordered": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "compare or expect members whose list is compared in any order, each element as often (a list the platform reads back in its own order, such as a state's next state ids sorted by id)."},
+        "compareMap": {"$ref": "#/definitions/mapSpec"},
+        "expectMap": {"$ref": "#/definitions/mapSpec"},
+        "produces": {"type": "object", "additionalProperties": {"type": "string"}},
+        "assert": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind"],
+          "properties": {
+            "kind": {"enum": ["count", "equals", "contains", "excludes"]},
+            "path": {"type": "string"},
+            "op": {"enum": ["eq", "ge", "le"]},
+            "value": {}
+          }
+        }
+      },
+      "allOf": [
+        {"$ref": "#/definitions/plannedRule"},
+        {"if": {"properties": {"surface": {"const": "sql"}}, "required": ["surface"]}, "then": {"required": ["localOnly", "query"], "properties": {"localOnly": {"const": true}}}},
+        {"if": {"properties": {"surface": {"enum": ["mcp", "admin-api"]}, "status": {"const": "implemented"}}, "required": ["surface", "status"]}, "then": {"required": ["operation", "arguments"]}},
+        {"if": {"properties": {"surface": {"const": "dwapi"}, "status": {"const": "implemented"}}, "required": ["surface", "status"]}, "then": {"required": ["operation", "handler"]}},
+        {"if": {"properties": {"handler": {"const": "dwapi-signed-in-get"}}, "required": ["handler"]}, "then": {"required": ["signIn"]}}
+      ]
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "arguments"],
+      "properties": {
+        "operation": {"type": "string", "minLength": 1},
+        "arguments": {"type": "object"},
+        "resave": {"type": "string", "minLength": 20, "description": "Why one save is measured not to settle: when the read-back differs after the write, the runner says so in a NOTE, saves once more and reads back again; that second read-back is the evidence."}
+      }
+    },
+    "write": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "surface", "status", "source"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "surface": {"enum": ["mcp", "admin-api"]},
+        "status": {"enum": ["implemented", "planned"]},
+        "reason": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "minLength": 1},
+        "create": {"$ref": "#/definitions/operation"},
+        "update": {"$ref": "#/definitions/operation"},
+        "delete": {"$ref": "#/definitions/operation", "description": "A prune step's removal of one row; the arguments read the row as {row.<member>}. The operation must be on recipeDeleteTools."},
+        "readBack": {"$ref": "#/definitions/read"},
+        "mcpSince": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+", "description": "MCP only: the add-in version this binding is first proven on. Read by the validator alone (modes per provenOn version); the runner never compares versions."},
+        "requiresSchema": {"type": "object", "additionalProperties": false, "minProperties": 1, "description": "MCP only: the binding runs only when its tool's tools/list schema carries every member named (input: the arguments; output: the structured result), as dotted paths with [*] for array items; otherwise the runner falls to the next binding.", "properties": {"input": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}, "output": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}}
+      },
+      "allOf": [
+        {"$ref": "#/definitions/plannedRule"},
+        {"if": {"properties": {"status": {"const": "implemented"}}, "required": ["status"]}, "then": {"required": ["readBack"], "anyOf": [{"required": ["create"]}, {"required": ["update"]}, {"required": ["delete"]}]}}
+      ]
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "key", "bindings", "source"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "title": {"type": "string", "minLength": 1},
+        "forEach": {"type": "string", "pattern": "^[A-Za-z0-9_]+(\\[\\*\\])?(\\.[A-Za-z0-9_]+(\\[\\*\\])?)*$"},
+        "key": {"type": "string", "minLength": 1},
+        "skipWhen": {"$ref": "#/definitions/skipWhen"},
+        "repeat": {"enum": ["reuse"], "description": "reuse: an item whose natural key an earlier item of this step already handled is skipped, for a shared object several items name (a product on several order lines)."},
+        "after": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["step", "states"],
+          "properties": {
+            "step": {"type": "string"},
+            "states": {"type": "array", "minItems": 1, "items": {"enum": ["CREATED", "UPDATED", "UNCHANGED"]}}
+          }
+        },
+        "find": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bindings"],
+          "properties": {
+            "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
+            "delivered": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}, "description": "The shape a layer copy delivers the object in, under keys this recipe does not write. Read only when the find matched nothing; one matching row or more makes the item DELIVERED: never written, and its produces (from exactly one row) feed later steps."},
+            "conflict": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["reason", "bindings"],
+              "description": "An object the input does not own that a create would collide with (a page that already answers at the input's path). Read only when the find and find.delivered matched nothing and the item is not skipped by skipWhen; one matching row blocks the item: nothing is written and the check is OPEN with the reason.",
+              "properties": {
+                "reason": {"type": "string", "minLength": 20},
+                "skipWhen": {"$ref": "#/definitions/skipWhen"},
+                "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
+                "adopt": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["when", "locate", "bindings"],
+                  "description": "When the condition holds (the input opts in per item), the object that collides is adopted instead of blocking the item: locate finds exactly one row ({found.*} reads it), then bindings read that object, compare it and produce its values. Anything but one row, or a compare that differs, blocks the item as a conflict. An adopted item is ADOPTED: never created, and the later steps write the input onto it.",
+                  "properties": {
+                    "when": {"$ref": "#/definitions/condition"},
+                    "locate": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}},
+                    "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "deliveredWith": {"$ref": "#/definitions/deliveredWith"},
+        "scan": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["binding", "text", "replacement", "field", "identify"],
+          "description": "A scan step: every row of the read whose field holds the text (ignoring case) is one place, named by its identify members; the write bindings' update reads the row as {row.<member>} and the replaced text as {replaced:row.<member>}. With no write binding each place is reported with unwritable.",
+          "properties": {
+            "binding": {"$ref": "#/definitions/read"},
+            "page": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["argument", "more", "next", "max"],
+              "properties": {"argument": {"type": "string", "minLength": 1}, "more": {"type": "string", "minLength": 1}, "next": {"type": "string", "minLength": 1}, "max": {"type": "integer", "minimum": 1, "maximum": 1000}}
+            },
+            "text": {"type": "string", "minLength": 1},
+            "replacement": {"type": "string"},
+            "field": {"type": "string", "minLength": 1},
+            "identify": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "unwritable": {"type": "string", "minLength": 1},
+            "batch": {"type": "string", "minLength": 1, "description": "The list member of the update arguments: with batch, one call carries every place of the item, for a tool whose contract is one call per batch."}
+          }
+        },
+        "prune": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["scope", "binding", "keep", "identify", "max"],
+          "description": "A prune step: per scope value, every row the read returns (and its match selects) that the input does not name is removed through the delete binding. Refused when the scope is empty, when a row is outside the scope, or when more than max rows would go.",
+          "properties": {
+            "scope": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["values", "member"],
+              "properties": {
+                "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token naming, from the input, the owners whose rows may be removed (one value or a list); the read takes each as {scope}."},
+                "member": {"type": "string", "minLength": 1, "description": "The row member that must equal the scope value; a row without it or with another value refuses the item."}
+              }
+            },
+            "binding": {"$ref": "#/definitions/read"},
+            "keep": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["field", "values"],
+              "properties": {
+                "field": {"type": "string", "minLength": 1, "description": "The row member holding the natural key."},
+                "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token for the natural keys the input names; those rows are kept."}
+              }
+            },
+            "identify": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "max": {"type": "integer", "minimum": 1, "maximum": 1000, "description": "More rows to remove than this refuses the item."},
+            "delivered": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["steps", "own"],
+              "description": "A prune never deletes what a layer copy delivered. When one of these earlier steps reported an item DELIVERED in this run (the copy keyed the history its own way), only rows whose own member holds a value are removed: the mark the recipe's create writes on every row it makes. Every other unnamed row is DELIVERED with a NOTE, never deleted.",
+              "properties": {
+                "steps": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}},
+                "own": {"type": "string", "minLength": 1, "description": "The row member the recipe's own create always fills (an order's purchase order number)."}
+              }
+            }
+          }
+        },
+        "retire": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["named", "binding", "active", "keep", "identify", "max"],
+          "description": "A retire step: once per natural key, every row the read returns whose active member holds the active value and that no keep rule names is set inactive through the update binding, never deleted. Refused when named resolves to nothing (a retire never empties a set), when a step in requires blocked an item, or when more than max rows would go.",
+          "properties": {
+            "named": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token for what the input names in this set; nothing named refuses the item."},
+            "requires": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"}, "description": "Earlier steps whose BLOCKED item refuses the retire, because the keep rules read their results."},
+            "binding": {"$ref": "#/definitions/read"},
+            "active": {"type": "object", "additionalProperties": false, "required": ["field", "value"], "properties": {"field": {"type": "string", "minLength": 1}, "value": {}}, "description": "The member and value of an active row; only those rows are considered, and the read-back must no longer return the row with it."},
+            "keep": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["field", "values"],
+                "properties": {
+                  "also": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["field", "values"], "properties": {"field": {"type": "string", "minLength": 1}, "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$"}}}, "description": "Further conditions that must hold as well for the rule to keep a row (a paragraph's row kept and its sort named)."},
+                  "field": {"type": "string", "minLength": 1, "description": "The row member compared."},
+                  "values": {"type": "string", "pattern": "^\\{[^{}]+\\}$", "description": "A token for the values kept: input names, or {step.<id>[*].<field>} for what an earlier step of this run found or wrote."}
+                }
+              }
+            },
+            "identify": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "max": {"type": "integer", "minimum": 1, "maximum": 200, "description": "More rows to retire than this refuses the item."}
+          }
+        },
+        "bindings": {"type": "array", "items": {"$ref": "#/definitions/write"}, "description": "Write bindings in preference order. Empty for a lookup step, which finds and produces values and never writes; a lookup needs a find. A prune step's bindings declare delete; a retire step's declare update."},
+        "trap": {"type": "string"},
+        "source": {"type": "string", "minLength": 1}
+      },
+      "anyOf": [{"required": ["find"]}, {"required": ["after"]}, {"required": ["scan"]}, {"required": ["prune"]}, {"required": ["retire"]}]
+    },
+    "deliveredWith": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step"],
+      "description": "The earlier step whose object this item belongs to. When a layer delivered that object (DELIVERED), an item that would be created or changed is DELIVERED instead and never written; an item found equal still passes. On a probe, a failing subject of a delivered object is a NOTE.",
+      "properties": {
+        "step": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "key": {"type": "string", "minLength": 1, "description": "The owner's natural key as a token template; default: this step's own key."}
+      }
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "minimumSubjects", "bindings"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]*$"},
+        "title": {"type": "string", "minLength": 1},
+        "forEach": {"type": "string", "pattern": "^[A-Za-z0-9_]+(\\[\\*\\])?(\\.[A-Za-z0-9_]+(\\[\\*\\])?)*$"},
+        "skipWhen": {"$ref": "#/definitions/skipWhen"},
+        "minimumSubjects": {"type": "integer", "minimum": 1},
+        "deliveredWith": {"allOf": [{"$ref": "#/definitions/deliveredWith"}, {"required": ["key"]}]},
+        "pollSeconds": {"type": "integer", "minimum": 1, "maximum": 120, "description": "Repeat a failing read until it passes or this many seconds pass, for a state the platform publishes late (a new URL)."},
+        "bindings": {"type": "array", "minItems": 1, "items": {"$ref": "#/definitions/read"}}
+      }
+    }
+  }
+}

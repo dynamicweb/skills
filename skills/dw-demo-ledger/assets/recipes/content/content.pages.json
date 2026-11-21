@@ -1,0 +1,281 @@
+{
+  "schema": 1,
+  "id": "content.pages",
+  "name": "Pages under a parent, their grid rows, paragraphs and item fields; an existing page adopted, and a page linked from a footer column",
+  "functions": ["content.pages", "content.paragraphs", "content.grid-rows"],
+  "skill": "dw-content-modelling",
+  "inputs": {"section": "content.pages", "required": ["pages"]},
+  "modes": {
+    "mcpOnly": {"usable": true, "reason": "Every step finds, writes and reads back with MCP tools."},
+    "hosted": {"usable": true, "reason": "Nothing here needs SQL or a recycle."},
+    "local": {"usable": true},
+    "layerDelivered": "verify"
+  },
+  "steps": [
+    {
+      "id": "pages",
+      "title": "Ensure each page under its parent by menu text",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "find": {"bindings": [
+        {"id": "mcp-children", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "compare": {"itemType": "{item.itemType}"}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ], "conflict": {"reason": "another page already answers at the input's path, so a new page would be served at the path with -1 and the old page would keep the address (and every link to it); set adopt true on the item to write the input onto that page, point the input at it, or remove or move the other page first", "skipWhen": {"path": "item.path", "exists": false}, "bindings": [
+        {"id": "mcp-path-owner", "surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ], "adopt": {"when": {"path": "item.adopt", "equals": true}, "locate": [
+        {"id": "mcp-navigation", "surface": "mcp", "status": "implemented", "operation": "get_navigation_structure", "arguments": {"areaId": "{build.areaId}"}, "rows": "items", "match": {"url": "{item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ], "bindings": [
+        {"id": "mcp-adopted-page", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_ids", "arguments": {"pageIds": ["{found.pageId}"]}, "rows": "data", "match": {"id": "{found.pageId}"}, "compare": {"itemType": "{item.itemType}"}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]}}},
+      "bindings": [
+        {"id": "mcp-create", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/page-paragraph-writes.md",
+          "create": {"operation": "save_pages", "arguments": {"pages": [{"id": 0, "areaId": "{build.areaId}", "parentPageId": "{step.pages[item.parent].id|0}", "menuText": "{item.menuText}", "urlName": "{item.urlName}", "itemType": "{item.itemType}", "active": true, "sort": "{item.sort|null}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "expect": {"itemType": "{item.itemType}"}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
+      ],
+      "trap": "itemType goes on the create call; changing it later deletes the page's item and its field values. The page id is read back by parent and menu text, never carried between runs or hosts. A url name another page already holds is not refused: the new page is served at <path>-1 and the save answers success, so before a create the step reads the input's path (find.conflict) and blocks the item when another page answers there; a base sample page in a navigation folder can own a root path. With adopt true the item takes that page instead (ADOPTED: located by its path in get_navigation_structure, so a page out of the menu cannot be adopted, and refused when its item type differs, because a type change deletes its content); the later steps write the input onto it.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    },
+    {
+      "id": "page-title",
+      "title": "Keep each page's Title equal to its menu text",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "find": {"bindings": [
+        {"id": "mcp-page-fields", "surface": "mcp", "status": "implemented", "operation": "get_page_item_field_values", "arguments": {"pageId": "{step.pages.id}"}, "rows": "data", "compareMap": {"from": {"Title": "{item.menuText}"}, "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-title", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/page-paragraph-writes.md",
+          "update": {"operation": "set_page_item_fields", "arguments": {"pageId": "{step.pages.id}", "fields": {"Title": "{item.menuText}"}}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_page_item_field_values", "arguments": {"pageId": "{step.pages.id}"}, "rows": "data", "expectMap": {"from": {"Title": "{item.menuText}"}, "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
+      ],
+      "trap": "On an item-typed page every save re-derives the menu text from the item's title field, reorder_pages included, so a page created with an empty Title loses its menu text at its next save.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    },
+    {
+      "id": "page-slug",
+      "title": "Pin the url name of each page whose Title this run wrote",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "after": {"step": "page-title", "states": ["UPDATED"]},
+      "bindings": [
+        {"id": "mcp-slug", "surface": "mcp", "status": "implemented", "source": "skills/dw-content-modelling/references/page-paragraph-writes.md",
+          "create": {"operation": "save_pages", "arguments": {"pages": [{"id": "{step.pages.id}", "urlName": "{item.urlName}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_ids", "arguments": {"pageIds": ["{step.pages.id}"]}, "rows": "data", "match": {"id": "{step.pages.id}"}, "expect": {"menuText": "{item.menuText}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
+      ],
+      "trap": "A Title write on a page without a pinned url name moves its address. No page read projects urlName, so only the served path proves the slug.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    },
+    {
+      "id": "rows",
+      "title": "Ensure each grid row on its page by sort, with its definition and container",
+      "forEach": "pages[*].rows[*]",
+      "key": "{parent.menuText}/{item.sort}",
+      "find": {"bindings": [
+        {"id": "mcp-rows", "surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "compare": {"definitionId": "{item.definitionId}", "container": "{item.container}"}, "produces": {"id": "id"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-row", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/grid-rows-and-binding.md",
+          "create": {"operation": "save_grid_rows", "arguments": {"gridRows": [{"id": 0, "pageId": "{step.pages[parent.menuText].id}", "container": "{item.container}", "definitionId": "{item.definitionId}", "itemType": "{item.itemType}", "sort": "{item.sort}"}]}},
+          "update": {"operation": "save_grid_rows", "arguments": {"gridRows": [{"id": "{found.id}", "container": "{item.container}", "definitionId": "{item.definitionId}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "expect": {"definitionId": "{item.definitionId}", "container": "{item.container}"}, "produces": {"id": "id"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}}
+      ],
+      "trap": "container is load-bearing: a row under a container the layout does not render is stored, reads back, and puts nothing on the page while it answers HTTP 200. Take it from get_layout_containers and the definition from get_row_definitions.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "id": "adopt-rows",
+      "title": "On a page the input adopts, set every grid row the input does not name inactive, never deleted",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "skipWhen": {"path": "item.adopt", "notEquals": true},
+      "retire": {
+        "named": "{item.rows|[]}",
+        "requires": ["rows"],
+        "binding": {"id": "mcp-page-rows", "surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[item.menuText].id}"}, "rows": "data", "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"},
+        "active": {"field": "active", "value": true},
+        "keep": [{"field": "id", "values": "{step.rows[*].id}"}],
+        "identify": ["id", "sort", "definitionId"],
+        "max": 40
+      },
+      "bindings": [
+        {"id": "mcp-deactivate-row", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-building/references/grid-rows-and-binding.md",
+          "update": {"operation": "save_grid_rows", "arguments": {"gridRows": [{"id": "{row.id}", "active": false}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[item.menuText].id}"}, "rows": "data", "match": {"id": "{row.id}"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}}
+      ],
+      "trap": "get_grid_rows_by_page_id leaves an inactive row out, so the read-back proves the retire by its absence. A row the input names by sort is kept and rewritten to the input's definition and container, keeping its own row settings (colour scheme, spacing). The report names each retired row (STEP adopt-rows RETIRED <page>@<id>/<sort>/<definition>); setting it active again restores it.",
+      "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"
+    },
+    {
+      "id": "adopt-paragraphs",
+      "title": "On a page the input adopts, take every paragraph the input does not name off the page: unbound from its row and inactive, never deleted",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "skipWhen": {"path": "item.adopt", "notEquals": true},
+      "retire": {
+        "named": "{item.paragraphs|[]}",
+        "requires": ["rows"],
+        "binding": {"id": "mcp-page-paragraphs", "surface": "mcp", "status": "implemented", "operation": "get_paragraphs_by_page_id", "arguments": {"pageId": "{step.pages[item.menuText].id}"}, "rows": "data", "source": "skills/dw-swift-page-design/SKILL.md"},
+        "active": {"field": "active", "value": true},
+        "keep": [{"field": "gridRowId", "values": "{step.rows[*].id}", "also": [{"field": "sort", "values": "{item.paragraphs[*].sort}"}]}],
+        "identify": ["id", "itemType"],
+        "max": 80
+      },
+      "bindings": [
+        {"id": "mcp-unbind-paragraph", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-page-design/SKILL.md",
+          "update": {"operation": "save_paragraphs", "arguments": {"paragraphs": [{"id": "{row.id}", "gridRowId": 0, "active": false}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_paragraphs_by_page_id", "arguments": {"pageId": "{step.pages[item.menuText].id}"}, "rows": "data", "match": {"id": "{row.id}"}, "expect": {"active": false, "gridRowId": 0}, "source": "skills/dw-swift-page-design/SKILL.md"}}
+      ],
+      "trap": "Runs before the paragraphs step, because a grid cell holds one paragraph and save_paragraphs refuses a second one there. A paragraph is kept when it sits in a row the input keeps and the input names its sort (the paragraphs step then reuses it and writes the input's fields onto it; a field the input does not name keeps its value). A paragraph placed in a grid row is always active: save_paragraphs refuses active false unless gridRowId 0 goes with it, so a retired paragraph is unbound and inactive, its item and field values kept. The report names each one (STEP adopt-paragraphs RETIRED <page>@<id>/<item type>); binding it to a row again restores it. A page adopted with no paragraphs in the input is refused here, so adoption never strips a page bare.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "id": "paragraphs",
+      "title": "Ensure each paragraph in its row by sort, with its item type and column",
+      "forEach": "pages[*].paragraphs[*]",
+      "key": "{parent.menuText}/{item.row}/{item.sort}",
+      "find": {"bindings": [
+        {"id": "mcp-paragraphs", "surface": "mcp", "status": "implemented", "operation": "get_paragraphs_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"gridRowId": "{step.rows[parent.menuText,item.row].id}", "sort": "{item.sort}"}, "compare": {"itemType": "{item.itemType}", "gridRowColumn": "{item.column}"}, "produces": {"id": "id"}, "source": "skills/dw-swift-page-design/SKILL.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-save-paragraph", "surface": "mcp", "status": "implemented", "source": "skills/dw-swift-page-design/SKILL.md",
+          "create": {"operation": "save_paragraphs", "arguments": {"paragraphs": [{"id": 0, "pageId": "{step.pages[parent.menuText].id}", "itemType": "{item.itemType}", "template": "{item.template|null}", "gridRowId": "{step.rows[parent.menuText,item.row].id}", "gridRowColumn": "{item.column}", "sort": "{item.sort}"}]}},
+          "update": {"operation": "save_paragraphs", "arguments": {"paragraphs": [{"id": "{found.id}", "gridRowColumn": "{item.column}"}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_paragraphs_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"gridRowId": "{step.rows[parent.menuText,item.row].id}", "sort": "{item.sort}"}, "expect": {"itemType": "{item.itemType}", "gridRowColumn": "{item.column}"}, "produces": {"id": "id"}, "source": "skills/dw-swift-page-design/SKILL.md"}}
+      ],
+      "trap": "A cell renders exactly one paragraph. Changing itemType on an existing paragraph deletes its item and field values, so the update never sends it.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "id": "paragraph-fields",
+      "title": "Write each paragraph's item fields, a button field as its full JSON or empty",
+      "forEach": "pages[*].paragraphs[*]",
+      "key": "{parent.menuText}/{item.row}/{item.sort}",
+      "skipWhen": {"path": "item.fields", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-field-values", "surface": "mcp", "status": "implemented", "operation": "get_paragraph_item_field_values", "arguments": {"paragraphId": "{step.paragraphs.id}"}, "rows": "data", "compareMap": {"from": "{item.fields}", "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]},
+      "bindings": [
+        {"id": "mcp-set-fields", "surface": "mcp", "status": "implemented", "source": "skills/dw-extend-mcp-tools/references/backend-mcp-server.md",
+          "update": {"operation": "set_paragraph_item_fields", "arguments": {"paragraphId": "{step.paragraphs.id}", "fields": "{item.fields}"}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_paragraph_item_field_values", "arguments": {"paragraphId": "{step.paragraphs.id}"}, "rows": "data", "expectMap": {"from": "{item.fields}", "key": "fieldSystemName", "value": "value"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
+      ],
+      "trap": "set_paragraph_item_fields counts the fields it was asked to write, not the ones it matched; the read-back names a misspelt field. A bare create stores the item type's string defaults in button fields, which render a ConverterException inside an HTTP 200 page: give every button field its full ButtonData JSON with a Label or Link, or an empty string for no button; the tool refuses a ButtonData JSON with neither.",
+      "source": "skills/dw-swift-page-design/SKILL.md"
+    },
+    {
+      "id": "footer-columns",
+      "title": "Find each footer column a page is placed in, by the column folder's menu text",
+      "forEach": "pages[*]",
+      "key": "{item.footer}",
+      "repeat": "reuse",
+      "skipWhen": {"path": "item.footer", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-area-pages", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_area_id", "arguments": {"areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.footer}"}, "produces": {"id": "id"}, "source": "skills/dw-demo-swift/references/header-menu.md"}
+      ]},
+      "bindings": [],
+      "trap": "A Swift 2 footer column is a Swift-v2_Navigation paragraph on the footer page whose NavigationRoot is a folder (on the sample base: Navigation > Footer Navigation > About the shop, Help and info); the column lists the folder's published, in-menu children. The column is found by the folder's menu text anywhere in the website: a second page with that menu text blocks the item as a duplicate.",
+      "source": "skills/dw-demo-swift/references/header-menu.md"
+    },
+    {
+      "id": "footer-links",
+      "title": "Link each page from its footer column: a shortcut page under the column that points at the page",
+      "forEach": "pages[*]",
+      "key": "{item.menuText}",
+      "skipWhen": {"path": "item.footer", "exists": false},
+      "find": {"bindings": [
+        {"id": "mcp-column-children", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "requiresSchema": {"output": ["data[*].shortCut"]}, "arguments": {"parentId": "{step.footer-columns[item.footer].id}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"shortCut": "Default.aspx?ID={step.pages[item.menuText].id}"}, "compare": {"menuText": "{item.menuText}", "active": true}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ], "conflict": {"reason": "the page itself already sits in this footer column, so the column already links it; drop the item's footer member", "bindings": [
+        {"id": "mcp-page-in-column", "surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.footer-columns[item.footer].id}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"id": "{step.pages[item.menuText].id}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+      ]}},
+      "bindings": [
+        {"id": "mcp-link-page", "surface": "mcp", "status": "implemented", "requiresSchema": {"input": ["pages[*].shortCut"]}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md",
+          "create": {"operation": "save_pages", "arguments": {"pages": [{"id": 0, "areaId": "{build.areaId}", "parentPageId": "{step.footer-columns[item.footer].id}", "menuText": "{item.menuText}", "urlName": "{item.urlName}-link", "active": true, "shortCut": "Default.aspx?ID={step.pages[item.menuText].id}"}]}},
+          "update": {"operation": "save_pages", "arguments": {"pages": [{"id": "{found.id}", "menuText": "{item.menuText}", "active": true}]}},
+          "readBack": {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "requiresSchema": {"output": ["data[*].shortCut"]}, "arguments": {"parentId": "{step.footer-columns[item.footer].id}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"shortCut": "Default.aspx?ID={step.pages[item.menuText].id}"}, "expect": {"menuText": "{item.menuText}", "active": true}, "produces": {"id": "id"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}}
+      ],
+      "trap": "The link is its own page with no item type (so its menu text holds) whose shortcut is Default.aspx?ID=<page id>: the footer renders the target's own path and the page keeps its place and address. Its url name must differ from the target's: footer column folders leave their segment out of their children's paths, so a link page with the target's url name takes the target's address and pushes the target to <path>-1 (measured on 10.30.6, settled again once renamed). The header is not placed: on Swift 2.5 the desktop header menu is rooted at the shop page, and a shortcut child of that page also shows in the mobile off-canvas menu and the footer column rooted there, and joins the menu only after a host recycle (header-menu.md). The shortcut needs a server whose save_pages input and page read carry shortCut (measured on MCP add-in 0.6.6-BETA); 0.6.3-BETA lists neither, refuses the unlisted member with an invocation error and creates nothing. Every binding here is gated on that member, so an older server leaves the item BLOCKED with the reason and writes nothing: update the add-in, or drop the item's footer member and place the page in the column by hand.",
+      "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"
+    }
+  ],
+  "debts": [],
+  "verify": {
+    "checkIds": ["content.pages.exist", "content.paragraphs.visible", "content.paragraphs.item-instances", "content.grid-rows.rows", "content.grid-rows.container-set", "content.grid-rows.paragraph-placement"],
+    "probes": [
+      {
+        "id": "page-unique",
+        "title": "Each page exists exactly once under its parent (an adopted page stays under its own parent)",
+        "forEach": "pages[*]",
+        "skipWhen": {"path": "item.adopt", "equals": true},
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "arguments": {"parentId": "{step.pages[item.parent].id|0}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"menuText": "{item.menuText}"}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+        ]
+      },
+      {
+        "id": "row-container",
+        "title": "Each grid row carries the container the input names",
+        "forEach": "pages[*].rows[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "get_grid_rows_by_page_id", "arguments": {"pageId": "{step.pages[parent.menuText].id}"}, "rows": "data", "match": {"sort": "{item.sort}"}, "assert": {"kind": "equals", "path": "container", "value": "{item.container}"}, "source": "skills/dw-swift-building/references/grid-rows-and-binding.md"}
+        ]
+      },
+      {
+        "id": "page-renders",
+        "title": "A public page answers 200 at its path with its Title (an adopted page, such as the home page, keeps the browser title it has: page-path proves it answers there)",
+        "forEach": "pages[*]",
+        "skipWhen": [{"path": "item.path", "exists": false}, {"path": "item.adopt", "equals": true}],
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "{item.path}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "contains", "path": "title", "value": "{item.menuText}"}, "source": "skills/dw-swift-page-design/SKILL.md"}
+        ]
+      },
+      {
+        "id": "page-path",
+        "title": "Each page is served at the input's path, not at a path the platform suffixed (-1) because another page holds it (a server whose fetch follows the redirect reports finalPath; an older one answers 301 and names the target)",
+        "forEach": "pages[*]",
+        "skipWhen": {"path": "item.path", "exists": false},
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "requiresSchema": {"output": ["finalPath"]}, "arguments": {"path": "/Default.aspx?ID={step.pages[item.menuText].id}"}, "rows": "$", "match": {"statusCode": 200}, "assert": {"kind": "equals", "path": "finalPath", "value": "{item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"},
+          {"surface": "mcp", "status": "implemented", "operation": "fetch_frontend_page_html", "arguments": {"path": "/Default.aspx?ID={step.pages[item.menuText].id}"}, "rows": "$", "match": {"statusCode": 301}, "assert": {"kind": "equals", "path": "error", "value": "Page redirects to: {item.path}"}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+        ]
+      },
+      {
+        "id": "footer-link",
+        "title": "Each page the input places in a footer column is linked there: the footer of the rendered storefront page holds a link with its menu text to its path (MCP-only, without the storefront read: the column holds one published link page to it)",
+        "forEach": "pages[*]",
+        "skipWhen": [{"path": "item.footer", "exists": false}, {"path": "item.path", "exists": false}],
+        "minimumSubjects": 1,
+        "pollSeconds": 20,
+        "bindings": [
+          {"surface": "dwapi", "status": "implemented", "handler": "storefront-links", "operation": "footer", "arguments": {"path": "{item.path}"}, "rows": "links", "match": {"href": "{item.path}", "text": "{item.menuText}"}, "assert": {"kind": "count", "op": "ge", "value": 1}, "source": "skills/dw-demo-swift/references/header-menu.md"},
+          {"surface": "mcp", "status": "implemented", "operation": "get_pages_by_parent_id", "requiresSchema": {"output": ["data[*].shortCut"]}, "arguments": {"parentId": "{step.footer-columns[item.footer].id}", "areaId": "{build.areaId}"}, "rows": "data", "match": {"shortCut": "Default.aspx?ID={step.pages[item.menuText].id}", "menuText": "{item.menuText}", "active": true}, "assert": {"kind": "count", "op": "eq", "value": 1}, "source": "skills/dw-demo-swift/references/header-menu.md"}
+        ]
+      },
+      {
+        "id": "page-render-clean",
+        "title": "Each page renders without an error the stored fields cannot show (an error dump, a missing image or icon file, text in its own background colour)",
+        "forEach": "pages[*]",
+        "minimumSubjects": 1,
+        "bindings": [
+          {"surface": "mcp", "status": "implemented", "operation": "inspect_page_render", "arguments": {"pageId": "{step.pages[item.menuText].id}"}, "rows": "issues", "match": {"severity": "error"}, "assert": {"kind": "count", "op": "eq", "value": 0}, "source": "skills/dw-content-modelling/references/page-paragraph-writes.md"}
+        ]
+      }
+    ]
+  },
+  "provenOn": [
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.3-BETA", "date": "2026-11-19", "evidence": "content.pages.1-verify.json (all WOULD-CREATE), content.pages.2-apply.json (12 of 12), content.pages.3-verify.json and content.pages.4-apply-again.json (10 of 10, nothing changed), content.pages.6-mcponly-apply.json (12 of 12 from empty, MCP only), content.pages.10-final-verify.json and content.pages.11-final-verify-mcponly.json (10 of 10); the pages answered HTTP 200 with the written copy and no ConverterException"},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-19", "evidence": "the whole-build recipe set on a fresh fictional input after the add-in was rolled 0.6.3-BETA -> 0.6.6-BETA (Update-HostAddIn): 1-verify (all eleven recipes WOULD-CREATE), 2-apply, 3-verify (11 of 11 recipes), 4-apply-again (nothing written, no debt owed), 5-verify after a brand restore (11 of 11); the same input then verified 11 of 11 on the add-in rolled back to 0.6.3. 6-mcponly is an MCP-only apply on a second fresh input. This recipe: 9 of 9 with the new page-render-clean probe (inspect_page_render reports no error-severity issue); MCP-only 9 of 9."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-20", "evidence": "adoption and footer links on the proof site, from a fictional input: a stand-in base page in the Help and info footer column (two rows, three paragraphs) that the input's page adopts by its path, and a new page placed in that column. n1-verify on a page delivered earlier: ADOPTED, its three stock paragraphs and second row WOULD-RETIRE. g2-apply on a fresh stand-in: ADOPTED (get_pages_by_ids), Title and slug written, the second row and the three stock paragraphs RETIRED and read back, the input's paragraph created in the freed cell, the new page CREATED and its link page CREATED under the column; the footer-link probe read the link (menu text, target path) in the footer of the rendered page (24 of 24). g3-verify and g4-apply-again: 20 of 20, nothing written; g5 MCP-only verify 20 of 20 through the column read. The adopted page renders the input's copy only. A verify run right after a page is created can miss it as the path owner while its URL still answers 404 (g1), as the conflict read always could."},
+    {"dwVersion": "10.30.6", "mcpVersion": "0.6.6-BETA", "date": "2026-11-20", "evidence": "the home page copy on the proof site: a copy of the sample base's home page (poster hero, feature, image, counters and button rows; 8 rows, 13 paragraphs) named by its menu text with adopt, a hero and an intro. h1-verify: the hero row and poster kept, 7 rows and 12 paragraphs WOULD-RETIRE. h2-apply: the intro row and paragraph CREATED, the poster's fields written (its image kept), 7 rows and 12 paragraphs RETIRED and read back; the render shows the hero and the intro only, no counter. h5-verify and h6-apply-again: 13 of 13, nothing written. A verify-only run against the sample home page itself listed its 7 stock rows and 13 paragraphs WOULD-RETIRE (its poster is stored at another sort than the input's) and wrote nothing."}
+  ],
+  "traps": [
+    "Never carry a page id between runs or hosts: ids are minted per host and a deserialize re-mints them. Pages are found by parent and menu text at the point of use.",
+    "Read the item type, row definition, container and template names from get_item_types, get_row_definitions, get_layout_containers and get_paragraph_templates (areaId always passed).",
+    "On a multi-language website every save on the master creates the mirror with the structure and not the field values; write on the master, then set the mirror's values.",
+    "A URL answers 404 for several seconds after a correct save; poll it to 200 before reading a 404 as a failure.",
+    "fetch_frontend_page_html returns a summary (statusCode, title, h1Tags, counts), not the markup: it proves the page answers, not that a paragraph rendered without an error block."
+  ]
+}

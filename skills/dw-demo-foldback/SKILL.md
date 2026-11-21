@@ -36,6 +36,40 @@ repo makes this a maintainer flow; without it the workflow is identical and land
 4. **Edit, validate, bump, PR** — `python3 scripts/validate-skills.py` exits 0, `CHANGELOG.md` and
    `metadata.version` move in the same commit, one atomic change on a branch, squash-merged.
 
+## A script written during a build is proposed as a recipe
+
+A generic one-off script a build needed (it creates, updates or checks platform objects from the
+customer's data, and nothing in it needs the customer's name) is not folded back as a script and
+not left in the demo folder. It is proposed as a recipe in
+[`dw-demo-ledger`](../dw-demo-ledger/SKILL.md), so the next build runs it through
+`Invoke-DwRecipeSet.ps1` and an MCP-only agent can follow it by hand:
+
+- **A function no recipe covers** (`Find-DwRecipe.ps1 -Function <id>` says "no recipe"): a new
+  recipe at `assets/recipes/<area>/<id>.json`, with its input section added to the input schema.
+- **A gap in an existing recipe** (a step the recipe leaves planned or does not have, such as an
+  assortment grant the buyer needed): a step or a binding on that recipe.
+- **A host primitive** (an index build, an assortment build, a flush, a recycle): not a recipe.
+  It is a debt of the recipe whose change owes it; on its own it runs as
+  `Invoke-DwRecipeSet.ps1 -Only <id> -PayDebts -Apply`.
+
+A recipe must meet this checklist before it is proposed (the contract is
+[recipes.md](../dw-demo-ledger/references/recipes.md) "Adding or promoting a recipe"):
+
+1. Data only: every call is a named MCP tool or Management API command with its arguments; no
+   code, no host, URL, path, credential or customer name (the validator refuses them).
+2. Each binding cites the reference that documents its shape, and the shape was measured on a host
+   (`tools/list`, then a real call). A step with no MCP or Management API write is `planned` with
+   the measured reason, never invented; SQL only reads.
+3. Every object is found by a natural key, so a second apply writes nothing; every write is read
+   back.
+4. `debts` names what a change owes; `dependsOn` names the recipes whose objects it needs.
+5. Probes prove behaviour (what a visitor or a buyer is served), not only what is stored.
+6. Proven before it is merged: verify (WOULD-CREATE), apply, verify (UNCHANGED, probes pass),
+   apply again (nothing written, no debt run) and an `-McpOnly` run, recorded in `provenOn`, with
+   the platform facts it ran into in `traps`.
+7. `python scripts/validate-skills.py`, `python scripts/validate_recipes.py --write-index` (the
+   recipe index) and the recipe Pester suites are green.
+
 ## The rule that makes it safe
 
 **Learnings flow demo → foundational only, and only sanitized.** A foundational skill must read as

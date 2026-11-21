@@ -210,8 +210,9 @@ the reason, and the model's judgment does the rest.
 **Author for the least capable model the skill is expected to run on — once.** These skills ship
 to whoever installs the bundle, on whatever model they happen to be running, so there are no
 per-tier variants of a SKILL.md or a reference; a forked recipe drifts the moment one copy is
-folded back and the other is not. Choosing a cheaper or stronger model for a given step is the
-*orchestrator's* dial, not the skill's — see
+folded back and the other is not. Choosing the tier (top, mid, small) for a given step is the
+*orchestrator's* dial, not the skill's, and skill text names tiers, never a provider's model
+(the validator refuses one) — see
 [`orchestrator.md`](../../../skills/dw-demo-base/references/orchestrator.md) ("Model tier"). The
 corollary shapes what you write here: **what a cheaper model cannot be trusted to remember,
 encode in a script or a detector, not in a longer prose rule.** A gate written as a validator

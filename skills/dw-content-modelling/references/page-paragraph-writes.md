@@ -6,7 +6,8 @@ input, and the labels and slugs a save silently re-derives. A correct write the 
 not show (the caches a write does not cross, a paragraph that renders nothing, the per-listing query
 lever) is [`render-after-write.md`](render-after-write.md). Schema design is
 [`modelling-discipline.md`](modelling-discipline.md); the language-mirror half of every write is
-[`language-layers.md`](language-layers.md).
+[`language-layers.md`](language-layers.md). Finding and replacing a name across every page text of a website is
+[`debrand-scan.md`](debrand-scan.md).
 
 ## Contents
 
@@ -16,6 +17,7 @@ lever) is [`render-after-write.md`](render-after-write.md). Schema design is
 - [A page save re-derives `PageMenuText` from the item type's title field](#a-page-save-re-derives-pagemenutext-from-the-item-types-title-field)
 - [`save_pages` persists `urlName`, and no page read projects it](#save_pages-persists-urlname-and-no-page-read-projects-it)
 - [A `RichTextEditor` value round-trips byte for byte through the MCP write path](#a-richtexteditor-value-round-trips-byte-for-byte-through-the-mcp-write-path)
+- [The MCP page, row and paragraph shapes, measured](#the-mcp-page-row-and-paragraph-shapes-measured)
 - [Cross-references](#cross-references)
 
 ## Creating a page or paragraph — the domain anchor and the read-before-write list
@@ -270,6 +272,31 @@ a tool wrote, so a paragraph whose copy matters should be written and verified t
 rather than opened and saved in the editor. Nothing about the MCP write path requires spacing to be
 expressed as markup — that stays a rendering choice (see
 [dw-swift-page-design](../../dw-swift-page-design/SKILL.md)), not a data-loss workaround.
+
+## The MCP page, row and paragraph shapes, measured
+
+Read from the add-in's own `tools/list` input schemas and by calling each tool on a site built from
+blank [dw 10.30.6 · mcp 0.6.3-BETA]. Every write takes a list under one member; every read answers
+`{count, data:[…]}`. A read model leaves out a member whose value is null (an empty item field comes
+back with no `value`).
+
+| Tool | Arguments | Notes |
+|---|---|---|
+| `save_pages` | `{pages:[{id, areaId, parentPageId, menuText, urlName, itemType, active, sort, …}]}` | `id` 0 creates, and on this add-in the response `items` carry the real new `id` (older add-ins answered 0). `parentPageId` is create-only (`move_page` moves). `menuText` holds only until the next save of an item-typed page re-derives it from the Title field, so write the Title next |
+| `get_pages_by_parent_id` | `{parentId, areaId}` (`areaId` required with `parentId` 0) | Rows carry `id`, `parentPageId`, `menuText`, `itemType`, `itemId`, `active`, `published`, `sort`, `titleFieldSystemName`; no `urlName` |
+| `set_page_item_fields` | `{pageId, fields:{SystemName: "value"}}` | Read back with `get_page_item_field_values {pageId}`: one row per field, `{fieldSystemName, value}` |
+| `save_grid_rows` | `{gridRows:[{id, pageId, container, definitionId, itemType, sort, …}]}` | `definitionId` must be a definition of the page's layout. Read back with `get_grid_rows_by_page_id {pageId}` (`id`, `container`, `definitionId`, `itemType`, `sort`) |
+| `save_paragraphs` | `{paragraphs:[{id, pageId, itemType, template, gridRowId, gridRowColumn, sort, …}]}` | `template` is the bare file name from `get_paragraph_templates`. Read back with `get_paragraphs_by_page_id {pageId}` (`id`, `gridRowId`, `gridRowColumn`, `itemType`, `template`, `sort`) |
+| `set_paragraph_item_fields` | `{paragraphId, fields:{SystemName: "value"}}` | Read back with `get_paragraph_item_field_values {paragraphId}`: one row per field, `{fieldSystemName, value}` |
+| `fetch_frontend_page_html` | `{path}` | A summary, not the markup: `statusCode`, `title`, `h1Tags` and counts. It proves the page answers, not that a paragraph rendered without an error block |
+| `inspect_page_render` | `{pageId, compareWithPageId}` | Renders the page and answers `{pageId, url, statusCode, renderedAsAdministrator, title, outline: ["Row 1: …", "  col 1 [text]: …"], issues: [{severity, kind, paragraphId, gridRowId, message, fix}], sectionCount, imageCount}`. An `error` issue is what a stored-field read cannot show (an error dump, a missing image or icon file, text in its own background colour); `warning` issues are design feedback (no imagery, no heading). It answered `renderedAsAdministrator: false` [dw 10.30.6 · mcp 0.6.3-BETA] and [dw 10.30.6 · mcp 0.6.6-BETA] |
+
+A button field takes its full ButtonData JSON with a `Label` or a `Link`, or an empty string for no
+button: `set_paragraph_item_fields` refuses a ButtonData JSON with neither ("the button does not
+render") and counts it as a failed field.
+
+A new page answered 404 at its path for a few seconds after a correct create and 200 afterwards, as
+the polling rule above says.
 
 ## Cross-references
 

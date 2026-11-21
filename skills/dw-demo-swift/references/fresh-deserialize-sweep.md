@@ -1,5 +1,7 @@
 # fresh-deserialize-sweep.md
 
+> **A recipe exists: `content.page-seo`** ([recipe index](../../dw-demo-ledger/references/recipe-index.md)). Input: the `debrand` section of the customer data file. It finds every page text and website setting that shows a forbidden name, replaces it and proves the rendered title and headings no longer show it. It leaves website and shop names, mail templates and the claims this file lists that are not a name. Run it with `Invoke-DwRecipeSet.ps1` ([Build from the library](../../dw-demo-base/references/orchestrator.md#build-from-the-library)); the procedure below stays the reference for hand work.
+
 > What a freshly deserialized Swift baseline tells a prospect that is false about the customer, and
 > the sweep that finds it BEFORE the demo path is built. Everything in this file survives a rebrand
 > that edits the pages a build touches — precisely because none of it is on the demo path. Run it as

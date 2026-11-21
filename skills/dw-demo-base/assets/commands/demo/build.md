@@ -14,6 +14,29 @@ user to run `/demo:impact` and sign off first. The build never runs on an unappr
 
 From the signed-off analysis, build the demo moments using the right skills:
 
+- **Recipes first.** Write the customer data file and run `dw-demo-ledger`
+  `scripts/Invoke-DwRecipeSet.ps1 -InputPath <file>` before any other write, then with `-Apply`
+  (what a layer copy already delivered reports `=` or `D` and is not written again; no flag). It builds and verifies accounts, pages, data models, the
+  catalogue, prices, order history, brand styles and the de-brand in one run
+  (`dw-demo-base/references/orchestrator.md` "Build from the library"). Only what no recipe covers
+  (`Find-DwRecipe.ps1 -Function <id>`) is built by hand below; its summary table is part of the
+  validation pass. Resolve the tiers from your agent's model list (`orchestrator.md` "Model
+  tier"), then follow this split:
+
+  > You are the orchestrator. Keep the brief and the custom work yourself. Hand the recipe set run
+  > (verify, apply once, pay debts, final verify) to a sub-agent on the smallest, fastest model your
+  > agent offers, and name that model in the call that starts the sub-agent: a call without a model
+  > inherits yours. Do the same for other mechanical work. In your result, say which model ran the
+  > recipe set and which model built the rest.
+
+  The delegate passes `-RunBy <its model>` to every set run; make no site write until its apply
+  has ended (`orchestrator.md` "Delegating the recipe set"). Run this session on the top tier and
+  follow `orchestrator.md` "Build construction for speed": cut the custom work into work packages
+  with disjoint ownership while the set runs, then start the builders in parallel, then have each
+  moment checked by a sub-agent that did not build it, and hand in from those checks. **Starting a
+  sub-session or dispatching a build instead?** Start it with the brief `dw-demo-base`
+  `scripts/New-DwBuildBrief.ps1 -OrchestratorModel <top> -SmallModel <small> [-MidModel <mid>]`
+  prints: the split in the brief that starts a session is what makes it delegate.
 - **Brand work: choose the path first** → `dw-demo-base/references/branded-demo-paths.md`. Default
   is path A (author a demo-local brand layer in YAML over the edition's demo content and
   deserialize it); path B (deserialize as shipped, then rebrand through the tools) is selected

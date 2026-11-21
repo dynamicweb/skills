@@ -1,6 +1,7 @@
 # The structural mental model — shops, groups, variants, BOM, fields, assets, workspaces
 
 Deep field-validated knowledge for Dynamicweb 10 PIM structural modelling. Getting any of these wrong causes rework.
+The MCP argument and read shapes for building a data model by tool are in [model-writes.md](model-writes.md).
 
 ## Contents
 

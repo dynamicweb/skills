@@ -1,0 +1,1355 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/dynamicweb/skills/skills/dw-demo-ledger/assets/recipe-input.schema.json",
+  "title": "Recipe input: the customer data one or more recipes apply",
+  "description": "One customer data file that the recipes and a sample-data producer both read: one object, schema 1, one key per section. A recipe reads the section it names and ignores the others. No credential belongs in this file: a secret is named by a reference key whose value the runner reads from DW_RECIPE_SECRETS. Paths of images and documents are relative to this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema"
+  ],
+  "properties": {
+    "schema": {
+      "const": 1
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Values the {build.*} tokens read when no ledger build file is supplied.",
+      "properties": {
+        "areaId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "defaultLanguage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pimShop": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "users.accounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "groups"
+      ],
+      "properties": {
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "kind",
+              "users"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "account",
+                  "staff"
+                ],
+                "description": "account: a customer company (type SystemAccount, carries the customer number); staff: a group of representatives."
+              },
+              "customerNumber": {
+                "type": "string",
+                "minLength": 1
+              },
+              "assortmentIds": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1},
+                "description": "Assortments the group's members may see. A product in an assortment is served to a signed-in user only when one of the user's groups holds a permission on it; allowAnonymousUsers covers the anonymous visitor only."
+              },
+              "users": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "userName"
+                  ],
+                  "properties": {
+                    "userName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "passwordRef": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+                      "description": "A key of DW_RECIPE_SECRETS, never the password."
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "role": {
+                      "enum": [
+                        "buyer",
+                        "accountAdmin",
+                        "user",
+                        "csr"
+                      ],
+                      "description": "buyer: the persona a signed-in check signs in as; accountAdmin: the account's administrator; user: a customer contact; csr: a representative who impersonates customers. Default user in an account, csr in a staff group."
+                    },
+                    "actsFor": {
+                      "type": "array",
+                      "maxItems": 1,
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": "The customer number of another account this buyer may act for (Switch account). Only the buyer carries it, and it names at most one account. No recipe writes it yet: a producer that delivers the accounts as serialized data reads it."
+                    }
+                  }
+                }
+              },
+              "phone": {
+                "type": "string"
+              },
+              "address": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "street": {
+                    "type": "string"
+                  },
+                  "zip": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$"
+                  }
+                }
+              }
+            },
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "account"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "customerNumber"
+              ]
+            }
+          }
+        },
+        "impersonation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "impersonator",
+              "customer"
+            ],
+            "properties": {
+              "impersonator": {
+                "type": "string",
+                "minLength": 1,
+                "description": "userName of the representative who impersonates."
+              },
+              "customer": {
+                "type": "string",
+                "minLength": 1,
+                "description": "userName of the customer being impersonated."
+              }
+            }
+          }
+        },
+        "assortmentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "content.pages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pages"
+      ],
+      "properties": {
+        "pages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "menuText",
+              "urlName",
+              "itemType"
+            ],
+            "properties": {
+              "menuText": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The natural key under the parent, unique in this file."
+              },
+              "urlName": {
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9-]*$"
+              },
+              "itemType": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Exact system name from get_item_types."
+              },
+              "parent": {
+                "type": "string",
+                "minLength": 1,
+                "description": "menuText of an earlier page in this list; absent for a page at the website root."
+              },
+              "sort": {
+                "type": "integer"
+              },
+              "public": {
+                "type": "boolean"
+              },
+              "path": {
+                "type": "string",
+                "pattern": "^/[A-Za-z0-9/_-]*$",
+                "description": "The path the page answers at, language prefix included, when the input expects it to render publicly."
+              },
+              "adopt": {
+                "type": "boolean",
+                "description": "true: when another page already answers at path (a base's sample page, the home page), write this item onto that page instead of blocking, and take the page's rows and paragraphs the item does not name off it (rows inactive, paragraphs unbound and inactive, never deleted; the report names each). Needs path; refused without rows and paragraphs, so a page is never stripped bare. Also applies to a page found by its menu text. An adopted page keeps its own parent. Absent or false: a page at the path blocks the item."
+              },
+              "footer": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Menu text of the footer column folder the page is linked from (on the sample base: About the shop, Help and info): a shortcut page under the column points at this page, which keeps its own place and path. Needs path for the probe."
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "sort",
+                    "definitionId",
+                    "container",
+                    "itemType"
+                  ],
+                  "properties": {
+                    "sort": {
+                      "type": "integer"
+                    },
+                    "definitionId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Exact id from get_row_definitions."
+                    },
+                    "container": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Exact name from get_layout_containers."
+                    },
+                    "itemType": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              "paragraphs": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "row",
+                    "column",
+                    "sort",
+                    "itemType"
+                  ],
+                  "properties": {
+                    "row": {
+                      "type": "integer",
+                      "description": "sort of the page row the paragraph is placed in."
+                    },
+                    "column": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "sort": {
+                      "type": "integer"
+                    },
+                    "itemType": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "template": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Exact value from get_paragraph_templates."
+                    },
+                    "fields": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "description": "Item field values by system name, button fields as their full JSON text or empty."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "assortmentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "catalogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "groups",
+        "products"
+      ],
+      "properties": {
+        "pimFolder": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the data-model folder under the PIM shop that holds one data model per top group (pim.model recipe)."
+        },
+        "shop": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Id of the storefront shop the groups are created in (pim.identifiers recipe)."
+        },
+        "documentCategories": {
+          "type": "array",
+          "description": "Product asset categories for documents, one per document kind (pim.documents recipe): a FileSelector category with its file-type filter.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "name",
+              "extensions"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[A-Za-z][A-Za-z0-9]*$",
+                "maxLength": 40,
+                "description": "The category's system name and natural key; letters and digits only."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Display name in the default language."
+              },
+              "extensions": {
+                "type": "string",
+                "pattern": "^[a-z0-9]+(,[a-z0-9]+)*$",
+                "description": "Comma-separated file extensions the category accepts, e.g. pdf."
+              }
+            }
+          }
+        },
+        "assortmentIds": {
+          "type": "array",
+          "maxItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "The existing storefront assortment every catalogue group joins (one id); the assortments debt builds it. Without it a site with active assortments lists none of the products."
+        },
+        "groups": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The storefront tree, two levels. A top group is one data model and one product category in the PIM (at most 4); its specFields are the spec table and the completeness fields of every product under it (at most 7).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "name"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9-]*$",
+                "maxLength": 40,
+                "description": "The group's natural key; a producer derives the group id from it."
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "parent": {
+                "type": "string",
+                "minLength": 1,
+                "description": "key of a top group; absent for a top group"
+              },
+              "description": {
+                "type": "string"
+              },
+              "specFields": {
+                "type": "array",
+                "description": "Top groups only.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "key",
+                    "label"
+                  ],
+                  "properties": {
+                    "key": {
+                      "type": "string",
+                      "pattern": "^[A-Za-z][A-Za-z0-9]*$"
+                    },
+                    "label": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "facet": {
+                      "type": "boolean",
+                      "description": "The field the storefront index offers as the facet of this product category (one per top group)."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "products": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Simple products. Variants and bundles are not generated.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "number",
+              "name",
+              "group",
+              "listPrice",
+              "images"
+            ],
+            "properties": {
+              "number": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+                "maxLength": 60
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "group": {
+                "type": "string",
+                "minLength": 1,
+                "description": "key of the group the product sits in (its primary group)"
+              },
+              "short": {
+                "type": "string"
+              },
+              "long": {
+                "type": "string"
+              },
+              "metaTitle": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "metaDescription": {
+                "type": "string"
+              },
+              "listPrice": {
+                "type": "number",
+                "minimum": 0
+              },
+              "stock": {
+                "type": "number",
+                "minimum": 0
+              },
+              "ean": {
+                "type": "string",
+                "maxLength": 255
+              },
+              "weight": {
+                "type": "number",
+                "minimum": 0
+              },
+              "images": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "PNG, JPEG, WebP or GIF; the first is the default image, the second the hover image, the rest the gallery."
+              },
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "name"
+                  ],
+                  "properties": {
+                    "path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "The document file, relative to the input file (pim.documents uploads it under /Files/Images)."
+                    },
+                    "name": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "category": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "key of the documentCategories entry the document is filed under (pim.documents recipe); a document without one is left to the layer."
+                    }
+                  }
+                }
+              },
+              "specs": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "specFields key of the product's top group -> value"
+              },
+              "related": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "accessories": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "related": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "spares": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pim.workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "states"
+      ],
+      "description": "Optional. The product workflow the pim.workflow recipe builds: its states with the states each may move to, attached to data models by name.",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "states": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Unique among the workflows of the solution."
+              },
+              "next": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Names of the states this state may move to; each is a state of this workflow."
+              }
+            }
+          }
+        },
+        "dataModels": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Names of the data models (a catalogue top group's name) the workflow is attached to."
+        }
+      }
+    },
+    "prices": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Every price row comes from here and the products' listPrice.",
+      "properties": {
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "description": "One currency for every price and order row; default USD, the currency the Swift area serves."
+        },
+        "listPrices": {
+          "type": "array",
+          "description": "The default price of each product this section prices: the product's own price, which a visitor without a better price pays. Name every product the tiers, groupPrices and contracts name; a producer fills it from catalogue.products[].listPrice.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product",
+              "amount"
+            ],
+            "properties": {
+              "product": {
+                "type": "string",
+                "description": "product number"
+              },
+              "amount": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "customerGroup": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of the user group the groupPrices are scoped to. A group price reaches the group's direct members only."
+        },
+        "buyer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "userName",
+            "passwordRef",
+            "account"
+          ],
+          "description": "The persona the signed-in price probes sign in as: a direct member of customerGroup and a user of the account whose contracts are probed.",
+          "properties": {
+            "userName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordRef": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+              "description": "A key of DW_RECIPE_SECRETS, never the password."
+            },
+            "account": {
+              "type": "string",
+              "minLength": 1,
+              "description": "customerNumber of the buyer's account"
+            }
+          }
+        },
+        "tiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product",
+              "quantity",
+              "amount"
+            ],
+            "properties": {
+              "product": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "amount": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "groupPrices": {
+          "type": "array",
+          "description": "Prices for every signed-in customer (the customers' user group).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "product",
+              "amount"
+            ],
+            "properties": {
+              "product": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "amount": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "contracts": {
+          "type": "array",
+          "description": "Prices for one account, matched on its customer number.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "account",
+              "product",
+              "amount"
+            ],
+            "properties": {
+              "account": {
+                "type": "string",
+                "description": "customerNumber of an account"
+              },
+              "product": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "amount": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Orders, quotes, carts and favourite lists. The owner (user) defaults to the buyer persona and must be a customer user. Line prices default to the price the owner's account gets at that quantity. daysAgo counts back from the day the data is applied.",
+      "properties": {
+        "buyer": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "userName",
+            "passwordRef"
+          ],
+          "description": "The buyer persona: the default owner of every order, quote and list, and the user the signed-in history probes sign in as.",
+          "properties": {
+            "userName": {
+              "type": "string",
+              "minLength": 1
+            },
+            "passwordRef": {
+              "type": "string",
+              "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+              "description": "A key of DW_RECIPE_SECRETS, never the password."
+            }
+          }
+        },
+        "shop": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Id of the shop the orders and quotes are placed in (the storefront's shop)."
+        },
+        "orderStates": {
+          "type": "array",
+          "description": "The order state each history state is set to, by state name in the order flow (completed: Completed, open: New, rejected: Rejected on a default flow).",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "state",
+              "name"
+            ],
+            "properties": {
+              "state": {
+                "enum": [
+                  "completed",
+                  "open",
+                  "rejected"
+                ]
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "numbering": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prefix"
+          ],
+          "description": "The order number series (EcomNumbers ORDER): a new order is numbered prefix + counter + postFix. A blank site numbers ORDER1, ORDER2.",
+          "properties": {
+            "prefix": {
+              "type": "string"
+            },
+            "postFix": {
+              "type": "string"
+            },
+            "counter": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "The last number used; the next order takes counter + 1."
+            }
+          }
+        },
+        "reset": {
+          "type": "boolean",
+          "description": "Return the history to the seeded state before a demo: remove the buyer's orders, quotes and carts the input does not name."
+        },
+        "orders": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "daysAgo",
+              "state",
+              "lines"
+            ],
+            "properties": {
+              "user": {
+                "type": "string"
+              },
+              "daysAgo": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "state": {
+                "enum": [
+                  "completed",
+                  "open",
+                  "rejected"
+                ]
+              },
+              "reference": {
+                "type": "string"
+              },
+              "lines": {
+                "$ref": "#/definitions/lines"
+              }
+            }
+          }
+        },
+        "quotes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "daysAgo",
+              "state",
+              "lines"
+            ],
+            "properties": {
+              "user": {
+                "type": "string"
+              },
+              "daysAgo": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "state": {
+                "enum": [
+                  "QuotePending",
+                  "QuoteSent",
+                  "QuoteAccepted",
+                  "QuoteRejected"
+                ]
+              },
+              "reference": {
+                "type": "string"
+              },
+              "comment": {
+                "type": "string"
+              },
+              "lines": {
+                "$ref": "#/definitions/lines"
+              }
+            }
+          }
+        },
+        "carts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "daysAgo",
+              "name",
+              "lines"
+            ],
+            "properties": {
+              "user": {
+                "type": "string"
+              },
+              "daysAgo": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lines": {
+                "$ref": "#/definitions/lines"
+              }
+            }
+          }
+        },
+        "favourites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "products"
+            ],
+            "properties": {
+              "user": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string"
+              },
+              "default": {
+                "type": "boolean"
+              },
+              "products": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "checkout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["country", "language", "methods"],
+      "description": "The payment and shipping methods a storefront checkout offers, who may use each, and the fee. Methods are found by name; a customer group is found by name and created by the users.accounts recipe. The buyer signs in for the per-visitor probes and must be a member of every customer group a method names.",
+      "properties": {
+        "country": {"type": "string", "pattern": "^[A-Z]{2}$", "description": "The country the storefront sells to (ISO 3166-1 alpha-2): every method is related to it, because a method without the visitor's country is not offered."},
+        "language": {"type": "string", "minLength": 1, "description": "The ecommerce language id the delivery API reads methods in (LanguageId), such as ENU."},
+        "retireUnnamed": {"type": "boolean", "description": "Set every active method the input does not name inactive (never deleted), per kind, once the input names at least one method of that kind: the base's sample methods stop being offered beside the brand's own. Absent means true; false leaves every other method as it is."},
+        "keepMethods": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}, "description": "Names of methods the input does not ensure that stay as they are (not retired), such as a base's customer pickup kept unchanged."},
+        "hideForAnonymous": {"enum": ["", "cart", "cart-price"], "description": "What the Swift storefront hides from a visitor who is not signed in (the website setting Hide for anonymous users): empty shows everything, cart hides add to cart, cart-price hides prices and add to cart. Absent leaves the setting as it is."},
+        "buyer": {"type": "object", "additionalProperties": false, "required": ["userName", "passwordRef"], "properties": {"userName": {"type": "string", "minLength": 1}, "passwordRef": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$", "description": "A key of DW_RECIPE_SECRETS, never the password."}}},
+        "methods": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "kind", "active", "anonymous"],
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "description": "The method's display name, its natural key."},
+              "kind": {"enum": ["payment", "shipping"]},
+              "description": {"type": "string"},
+              "active": {"type": "boolean"},
+              "anonymous": {"type": "boolean", "description": "Whether a visitor who is not signed in may use it (allowAnonymousUsers)."},
+              "customerGroups": {"type": "array", "items": {"type": "string", "minLength": 1}, "description": "Names of the customer groups whose members are offered the method; empty or absent offers it to every signed-in user."},
+              "fee": {"type": "number", "minimum": 0, "description": "A fixed fee in the shop currency: a shipping method's default fee, or a payment method's fee rule."},
+              "termsCode": {"type": "string", "description": "A payment method's terms code (on account: NET30)."}
+            }
+          }
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "colorSchemes", "typography", "buttonStyle"],
+      "description": "The brand kit the content.design-styles recipe applies: colour schemes, typography, self-hosted fonts, button style, files, favicon and the header and footer slots. Names are the MCP style tools' own (camelCase, enums by name). A brand-kit-extractor swift2/ folder converts to this section with ConvertFrom-DwBrandKit.ps1, which maps its numeric enums to these names.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "The id of the colour scheme group, the typography and the button style (the kit slug). Never 'default': the shipped styles stay as they are."
+        },
+        "name": {"type": "string", "minLength": 1, "description": "Display name of the scheme group, the typography and the button style."},
+        "defaultColorScheme": {"type": "string", "minLength": 1, "description": "The scheme id the website paints with; default light."},
+        "colorSchemes": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Swift's seven scheme ids (light, lightgrey1, lightgrey2, dark, darksubtle, primary, secondary) keep every row's data-dw-colorscheme resolving; colours as #rrggbb, compared as written.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "backgroundColor", "foregroundColor", "primaryButtonColor", "secondaryButtonColor"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"},
+              "name": {"type": "string", "minLength": 1},
+              "backgroundColor": {"$ref": "#/definitions/hex"},
+              "foregroundColor": {"$ref": "#/definitions/hex"},
+              "primaryButtonColor": {"$ref": "#/definitions/hex"},
+              "secondaryButtonColor": {"$ref": "#/definitions/hex"}
+            }
+          }
+        },
+        "assetFolder": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$",
+          "description": "Folder under /Files/Images that receives files[]; MCP uploads land under /Files/Images only."
+        },
+        "files": {
+          "type": "array",
+          "description": "Logo, favicon and font files to upload to /Files/Images/<assetFolder>/<name>; matched by name and compared by size.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["file", "name"],
+            "properties": {
+              "file": {"type": "string", "minLength": 1, "description": "Path relative to this input file."},
+              "name": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*\\.[A-Za-z0-9]+$"}
+            }
+          }
+        },
+        "fonts": {
+          "type": "array",
+          "description": "Self-hosted faces (save_fonts), one per weight and style; a typography names them by id.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "name", "family", "filePath", "weight", "style"],
+            "properties": {
+              "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"},
+              "name": {"type": "string", "minLength": 1},
+              "family": {"type": "string", "minLength": 1},
+              "filePath": {"type": "string", "pattern": "^/Files/Images/.+\\.(woff2|woff|ttf|otf)$", "description": "Archive path of an uploaded file, normally /Files/Images/<assetFolder>/<files[].name>."},
+              "weight": {"$ref": "#/definitions/fontWeight"},
+              "style": {"enum": ["normal", "italic"]}
+            }
+          }
+        },
+        "typography": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["baseFontSize", "baseFontScale", "paragraphFontWeight", "paragraphLineHeight", "headingFontWeight", "headingLineHeight", "buttonFontWeight", "buttonLineHeight"],
+          "description": "A typography save overwrites the whole object. A role names a family (paragraphFont, from a font host) or a fonts[] id (paragraphCustomFontId). Every line height is required: an unset one is written as line-height 0.",
+          "properties": {
+            "baseFontSize": {"type": "integer", "minimum": 1},
+            "baseFontScale": {"type": "number", "exclusiveMinimum": 0},
+            "paragraphFont": {"type": "string", "minLength": 1},
+            "paragraphCustomFontId": {"type": "string", "minLength": 1},
+            "paragraphFontStyle": {"enum": ["normal", "italic"]},
+            "paragraphFontWeight": {"$ref": "#/definitions/fontWeight"},
+            "paragraphLineHeight": {"type": "number", "exclusiveMinimum": 0},
+            "paragraphLetterSpacing": {"type": "number"},
+            "paragraphTextTransformation": {"$ref": "#/definitions/textTransform"},
+            "headingFont": {"type": "string", "minLength": 1},
+            "headingCustomFontId": {"type": "string", "minLength": 1},
+            "headingFontStyle": {"enum": ["normal", "italic"]},
+            "headingFontWeight": {"$ref": "#/definitions/fontWeight"},
+            "headingLineHeight": {"type": "number", "exclusiveMinimum": 0},
+            "headingLetterSpacing": {"type": "number"},
+            "headingTextTransformation": {"$ref": "#/definitions/textTransform"},
+            "buttonFont": {"type": "string", "minLength": 1},
+            "buttonCustomFontId": {"type": "string", "minLength": 1},
+            "buttonFontStyle": {"enum": ["normal", "italic"]},
+            "buttonFontWeight": {"$ref": "#/definitions/fontWeight"},
+            "buttonLineHeight": {"type": "number", "exclusiveMinimum": 0},
+            "buttonLetterSpacing": {"type": "number"},
+            "buttonTextTransformation": {"$ref": "#/definitions/textTransform"}
+          }
+        },
+        "buttonStyle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["shape", "borderSize", "paddingX", "paddingY"],
+          "properties": {
+            "shape": {"enum": ["Squared", "Rounded", "Pill"]},
+            "borderSize": {"type": "number", "minimum": 0},
+            "paddingX": {"type": "number", "minimum": 0, "description": "rem"},
+            "paddingY": {"type": "number", "minimum": 0, "description": "rem"}
+          }
+        },
+        "favicon": {"type": "string", "pattern": "^/Files/.+\\.(png|ico|svg)$", "description": "Archive path of the favicon, normally an uploaded file."},
+        "renderCheck": {
+          "type": "array",
+          "description": "Storefront paths that must still answer 200 after the re-skin, such as the home page and a product list.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": {"path": {"type": "string", "pattern": "^/[A-Za-z0-9/_-]*$"}}
+          }
+        },
+        "layout": {
+          "type": "array",
+          "description": "The header and footer pages the website selects, by their Swift-v2_Master slot: the logo on each and the colour scheme of its rows.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["slot"],
+            "properties": {
+              "slot": {"enum": ["HeaderDesktop", "HeaderMobile", "FooterDesktop", "FooterMobile"]},
+              "logo": {
+                "type": "object",
+                "additionalProperties": {"type": "string"},
+                "description": "Swift-v2_Logo field values by system name: Image (archive path), LogoName, LogoWidth."
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["sort", "colorScheme"],
+                  "properties": {
+                    "sort": {"type": "integer", "description": "sort of an existing row of the slot page."},
+                    "colorScheme": {"type": "string", "minLength": 1, "description": "A colorSchemes[].id."}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "debrand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["forbidden"],
+      "description": "The names a website must no longer show and what replaces each; the content.page-seo recipe finds every place and replaces it where a write exists.",
+      "properties": {
+        "forbidden": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["text", "replacement"],
+            "properties": {
+              "text": {"type": "string", "minLength": 2, "description": "Matched ignoring case, as stored (an ampersand in rich text is &amp;)."},
+              "replacement": {"type": "string", "minLength": 1}
+            }
+          }
+        },
+        "renderCheck": {
+          "type": "array",
+          "description": "Storefront paths whose rendered title and h1 headings must not show a forbidden text.",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path"],
+            "properties": {"path": {"type": "string", "pattern": "^/[A-Za-z0-9/_-]*$"}}
+          }
+        }
+      }
+    },
+    "brandCopy": {      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "companyName",
+        "emailDomain",
+        "logo",
+        "images"
+      ],
+      "description": "The storefront copy the layer carries (Home, About, header, footer, PDP, the asset portal header and footer). Named slots overwrite their field; everywhere else the brand name, the e-mail domain, the phone number and the image paths are substituted.",
+      "properties": {
+        "companyName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shortName": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9 ]+$",
+          "description": "Default: the first word of companyName."
+        },
+        "emailDomain": {
+          "type": "string",
+          "pattern": "^[a-z0-9.-]+\\.[a-z]+$"
+        },
+        "assetFolder": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]+$",
+          "description": "Folder under Files/Images and Files/Documents; default companyName in PascalCase."
+        },
+        "logo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "logoFooter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "images": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hero",
+            "catalogueBand",
+            "people"
+          ],
+          "properties": {
+            "hero": {
+              "type": "string"
+            },
+            "catalogueBand": {
+              "type": "string"
+            },
+            "people": {
+              "type": "string"
+            },
+            "portal": {
+              "type": "string"
+            }
+          }
+        },
+        "contact": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "email": {
+              "type": "string"
+            },
+            "phone": {
+              "type": "string"
+            }
+          }
+        },
+        "copyright": {
+          "type": "string"
+        },
+        "copyrightYear": {
+          "type": "integer"
+        },
+        "home": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "metaTitle": {
+              "type": "string"
+            },
+            "metaDescription": {
+              "type": "string"
+            },
+            "heroEyebrow": {
+              "type": "string"
+            },
+            "heroTitle": {
+              "type": "string"
+            },
+            "heroText": {
+              "type": "string"
+            },
+            "heroAltText": {
+              "type": "string"
+            }
+          }
+        },
+        "about": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "metaDescription": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "hex": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+    "fontWeight": {"enum": ["Thin", "ExtraLight", "Light", "Regular", "Medium", "SemiBold", "Bold", "ExtraBold", "Black"]},
+    "textTransform": {"enum": ["None", "Uppercase", "Lowercase", "Capitalize"]},
+    "lines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "product",
+          "quantity"
+        ],
+        "properties": {
+          "product": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "unitPrice": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}
