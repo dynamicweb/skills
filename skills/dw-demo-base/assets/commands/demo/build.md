@@ -30,9 +30,12 @@ From the signed-off analysis, build the demo moments using the right skills:
   > recipe set and which model built the rest.
 
   The delegate passes `-RunBy <its model>` to every set run; make no site write until its apply
-  has ended (`orchestrator.md` "Delegating the recipe set"). **Starting a sub-session or
-  dispatching a build instead?** Start it with the brief `dw-demo-base`
-  `scripts/New-DwBuildBrief.ps1 -OrchestratorModel <mid> -SmallModel <small> [-TopModel <top>]`
+  has ended (`orchestrator.md` "Delegating the recipe set"). Run this session on the top tier and
+  follow `orchestrator.md` "Build construction for speed": cut the custom work into work packages
+  with disjoint ownership while the set runs, then start the builders in parallel, then have each
+  moment checked by a sub-agent that did not build it, and hand in from those checks. **Starting a
+  sub-session or dispatching a build instead?** Start it with the brief `dw-demo-base`
+  `scripts/New-DwBuildBrief.ps1 -OrchestratorModel <top> -SmallModel <small> [-MidModel <mid>]`
   prints: the split in the brief that starts a session is what makes it delegate.
 - **Brand work: choose the path first** → `dw-demo-base/references/branded-demo-paths.md`. Default
   is path A (author a demo-local brand layer in YAML over the edition's demo content and

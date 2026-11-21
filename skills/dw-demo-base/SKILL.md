@@ -49,13 +49,16 @@ Every sister demo skill carries the same "how to run me" header and defers to th
    name the small tier's model in that call**; a call without a model inherits yours and saves
    nothing. Read the brief's custom work while it runs, then read its report. Run the set
    yourself only when your agent has no such mechanism, and say in the hand-in which model ran it.
-2. **The orchestrator (mid tier or above) builds what the set reports it does not cover**: a
-   BLOCKED line's reason, the index's "What stays planned", and the custom storefront work.
-3. **A final verify of the set** (all PASS) plus the brief's checks, by the orchestrator.
+2. **The orchestrator (top tier) builds what the set reports it does not cover**: a BLOCKED
+   line's reason, the index's "What stays planned", and the custom storefront work, cut into work
+   packages while the set runs and built by parallel builder sub-agents once its apply has ended.
+3. **A final verify of the set** (all PASS) plus each moment checked on the live site by a
+   sub-agent that did not build it; the hand-in reports those checks.
 
 Delegating step 1 never ends the orchestrator's work: it owns the whole brief and the hand-in.
 Tiers, what to give the delegate, what to demand back and how to read it:
-[orchestrator.md](references/orchestrator.md) "Model tier" and "Delegating the recipe set".
+[orchestrator.md](references/orchestrator.md) "Model tier", "Build construction for speed" and
+"Delegating the recipe set".
 
 What every branded build writes goes in the data file, so step 1 writes it:
 

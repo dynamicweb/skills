@@ -11,6 +11,7 @@
 - [Strictness gradient — one human pause, automated quality elsewhere (every mode)](#strictness-gradient--one-human-pause-automated-quality-elsewhere-every-mode)
 - [Dispatched sessions: the brief carries the execution authority](#dispatched-sessions-the-brief-carries-the-execution-authority)
 - [Model tier — a dial on the orchestrator, never a fork of the skills](#model-tier--a-dial-on-the-orchestrator-never-a-fork-of-the-skills)
+- [Build construction for speed](#build-construction-for-speed)
 - [Delegating the recipe set — the orchestrator keeps the brief](#delegating-the-recipe-set--the-orchestrator-keeps-the-brief)
 - [Discovery prompts (impact-analysis input)](#discovery-prompts-impact-analysis-input)
 - [Acceptance criteria (the shared definition of PASS)](#acceptance-criteria-the-shared-definition-of-pass)
@@ -343,8 +344,9 @@ back and the other is not. The corpus already pays for exactly one source of tru
 The tier decision belongs one layer up, in the orchestrator: the session that drives the build
 and the sub-sessions or subagents it starts. These skills name three tiers and no model:
 
-- **top**: the provider's deepest-reasoning model. Design, the brief's unique ask, judging.
-- **mid**: the default builder. Builds the brief past the recipe set; the lowest tier that does.
+- **top**: the provider's deepest-reasoning model. The build session, custom templates and
+  logic, design, the brief's unique ask, judging.
+- **mid**: the standard general-purpose model. Routine content such as translation batches.
 - **small**: the provider's fastest, cheapest model. Mechanical, scripted work.
 
 **Resolve the tiers from your own environment.** A tier is a role, not a product: map it to
@@ -360,22 +362,72 @@ Place the tier by the *kind* of work, not by the phase name:
 
 | Work | Tier | Why |
 |---|---|---|
-| Mechanical sweeps — validator runs, the recipe set run, the integrity sweep, visual-QA detectors, scrub passes | small | the verdict is deterministic; the script holds the judgment, the model only runs it |
-| Building the rest of the brief — what the set does not cover, hand-followed recipes, custom templates | mid | the brief and the owning skills are the plan, and the final verify catches drift before the hand-in |
-| The fresh-context validator in the automated loop | mid, top for a high-stakes demo | its whole value is catching what the builder rationalised past |
+| Mechanical sweeps — validator runs, the recipe set run, the integrity sweep, visual-QA detectors, scrub passes; bulk mechanical writes (stock rows, page permissions, labels) | small | the verdict is deterministic; the script holds the judgment, the model only runs it |
+| Routine content — translation batches, copy from the brief | mid | the text is given; the checker reads the result |
+| The build session of an assignment with custom work, custom template and logic packages | top | the lower tiers did not complete the custom half ("Build construction for speed") |
+| The fresh-context validator in the automated loop, the independent checkers of a build | the builder's tier by default, never the session that built it | its whole value is catching what the builder rationalised past |
 | Impact analysis, the brief's unique ask, brand/taste calls, the visual-QA human sign-off, authoring a fold-back | top | judgment under ambiguity, where no mechanical check exists to fall back on |
 
 Measured on demo builds from blank sites, judged blind [dw 10.30 · swift 2.5]: the small
 tier ran the recipe set from a customer data file (verify, apply, pay debts, final verify) on four
 builds in 7 to 9 minutes for about 3 US cents each, with no hand writes and the same result as the
 larger tiers. Alone it could not build the rest of a brief (it duplicated data, hid prices and
-built no custom work). The mid tier built the rest to a good standard; the top tier held one more
-acceptance check at about three times the minutes and cost.
+built no custom work). On those briefs the mid tier built the rest to a good standard and the top
+tier held one more acceptance check at about three times the minutes; on an assignment with real
+custom work the mid tier did not build it ("Build construction for speed" below).
 
 The rule that keeps this honest: **what a cheaper model cannot be trusted to remember, encode in
 a script or a detector — not in a longer prose rule.** A gate written as a validator holds at
 every tier; the same gate written as three more paragraphs of prose holds only at the top one,
 and silently stops holding when someone dials the tier down for cost.
+
+## Build construction for speed
+
+Measured on first builds of one nine-moment assignment on fresh sites [dw 10.30 · swift 2.5]:
+
+- A mid-tier orchestrator with the set delegated to the small tier had 9 of 9 recipes passing in
+  about ten minutes, then handed in without building the custom half, in four runs of four, also
+  when its brief said unbuilt pieces must go up to the top tier. The mid tier is not the build
+  session for an assignment with real custom work.
+- A top-tier orchestrator, with the set and the bulk mechanical writes (stock rows, page
+  permissions, labels) on the small tier and a translation batch on the mid tier, completed the
+  build in 63 minutes, 59 of them spent building the custom templates itself, one after another.
+  The lower tiers cost under 2% of the run: delegating down does not change the price, and the
+  top tier's serial custom work is the time.
+- A blind judge then held 3 of 10 checks of that build and 7 partly, where its hand-in claimed all
+  held: unreset rehearsal stock, a role that could reach another dealer's orders, documents
+  downloadable without sign-in, an empty translated catalogue, a wrong price after a customer
+  switch. The orchestrator had checked its own work.
+
+Cost is the same either way, so a build is set up for speed with reliability. The construction,
+which [`scripts/New-DwBuildBrief.ps1`](../scripts/New-DwBuildBrief.ps1) prints as the build brief:
+
+1. **The orchestrator runs on the top tier.** A lower tier started as orchestrator gets the same
+   brief plus a line that every custom package goes up to top-tier builders.
+2. **Phase 1, in parallel from minute one.** The recipe set delegate runs on the small tier
+   ("Delegating the recipe set" below) while the orchestrator reads the plan and cuts the custom
+   work into independent work packages. Each package names the files and templates, pages and
+   platform objects it alone may write, its moments and its acceptance check. No site write
+   before the delegate's apply has ended.
+3. **Phase 2, parallel builders.** When the apply has ended, one builder sub-agent per package
+   starts at the same time (at most four at once by default), the model named in every call:
+   top for custom templates and logic, small for bulk mechanical writes, mid for routine content.
+   Ownership is disjoint; a shared file (a shared stylesheet, a shared layout, the data file) has
+   one owner package or is edited only by the orchestrator at merge. A site restart or recycle,
+   an index rebuild or a global setting (currency, language layers, order states, permissions on
+   shared pages) is the orchestrator's alone, announced, between waves. A builder removes every
+   test order or cart it makes and reports every object it created.
+4. **Phase 3, independent check.** Each moment is checked on the live site by a fresh sub-agent
+   that did not build it, in parallel, in a real browser where the agent has one, signed in as
+   the personas, against the brief's observable outcomes. One more checker covers what cuts
+   across: another account's data reachable by a persona or by URL, documents reachable without
+   sign-in, leftover sample content, leftover test orders, carts or stock changes, a non-empty
+   catalogue in every language, the 390 px width. A failure goes back to its owning builder
+   once; then the orchestrator resets the demo data to the plan's opening state and verifies the
+   reset.
+5. **The hand-in reports the checkers' evidence only.** A moment holds only when a checker that
+   did not build it saw it; otherwise it is partly or not checked, with the reason. The hand-in
+   names the model that ran the set, built each package and checked each moment.
 
 ## Delegating the recipe set — the orchestrator keeps the brief
 
@@ -398,8 +450,8 @@ saves neither time nor price. Measured on two first builds of one brief on two p
 top tier and the other started three subagents that all inherited its own model.
 
 **Work while it runs.** Start the delegate in the background where your agent allows it, and use
-the wait for what needs no write: read the brief's custom work, the owning skills and the site's
-templates. Make no write to the site until the delegate's apply has ended; two writers on one
+the wait for what needs no write: read the plan and cut its custom work into work packages
+("Build construction for speed" above). Make no write to the site until the delegate's apply has ended; two writers on one
 site invalidate the set's read-backs.
 
 **A dispatched build gets the split from its brief.** This section alone does not make a session
@@ -411,13 +463,15 @@ build session (a launcher, a dispatcher, a person) therefore starts it with the 
 resolved as "Model tier" says:
 
 ```powershell
-pwsh -NoProfile -File <skills>/dw-demo-base/scripts/New-DwBuildBrief.ps1 -OrchestratorModel <mid> -SmallModel <small> [-TopModel <top> -EscalateFor <pieces>] [-DataFile <file> -SkillsPath <skills> -LogFolder <folder>] [-OutFile <brief.md>]
+pwsh -NoProfile -File <skills>/dw-demo-base/scripts/New-DwBuildBrief.ps1 -OrchestratorModel <top> -SmallModel <small> [-MidModel <mid>] [-BuilderModel <model> -CheckerModel <model> -MaxParallel <n>] [-TopModel <top> -EscalateFor <packages>] [-DataFile <file> -SkillsPath <skills> -LogFolder <folder>] [-OutFile <brief.md>]
 ```
 
 It opens with this paragraph, the small model's id named before "the smallest, fastest model your
-agent offers", and adds the delegate's run order, the no-write rule and the hand-in below.
-`-TopModel` lets the hardest custom pieces go up and has the hand-in name them; `-Phase plan`
-prints a read-only planning brief.
+agent offers", and adds the delegate's run order, the three phases of "Build construction for
+speed" and the hand-in. A `-TopModel` different from `-OrchestratorModel` (a lower tier started
+as orchestrator) adds the line that every custom package goes up to it, and the hand-in names
+them; `-EscalateFor` names custom packages in the builder line; `-Phase plan` prints a read-only
+planning brief.
 
 > You are the orchestrator. Keep the brief and the custom work yourself. Hand the recipe set run
 > (verify, apply once, pay debts, final verify) to a sub-agent on the smallest, fastest model your
@@ -475,8 +529,8 @@ reason, the last line (`recipe set: <n> of <m> recipes passed`) and each run's e
 **Re-run one recipe instead of fixing by hand**: `Invoke-DwRecipeSet.ps1 -InputPath <file> -Only
 <id>`, then with `-Apply`. A hand fix to an object a recipe owns is undone or flagged by the next
 apply and leaves the final verify proving the wrong thing; build by hand only what no recipe covers.
-Then build the rest of the brief, run the final verify of the set yourself, and run the brief's
-checks: that is the hand-in, and it is the orchestrator's.
+Then run phases 2 and 3 of "Build construction for speed" above: the builders, the independent
+checkers and the reset. The hand-in reports what the checkers saw, and it is the orchestrator's.
 
 ## Discovery prompts (impact-analysis input)
 
