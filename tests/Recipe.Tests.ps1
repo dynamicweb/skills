@@ -113,7 +113,7 @@ Export-ModuleMember -Function *
                         if ($s.refuseButtons -and $k -like '*Button') { $failed++; continue }
                         $s.fields["para$($Arguments.paragraphId)"][$k] = $Arguments.fields[$k]
                     }
-                    return @{structuredContent = @{succeeded = $Arguments.fields.Count - $failed; failed = $failed}}
+                    return @{structuredContent = @{succeeded = $Arguments.fields.Count - $failed; failed = $failed; errors = @(if ($failed) { 'FirstButton: the value is not a button' })}}
                 }
                 # A page is served at /en-us/<url name or menu text>; a later page whose address an earlier page holds is
                 # served at <address>-1, as measured. /Default.aspx?ID=<id> lands on the page's served path (finalPath).
@@ -643,7 +643,7 @@ Describe 'Invoke-DwRecipe on content.pages' {
         New-Stub
         $global:RecipeStub.refuseButtons = $true
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
-        ($r.lines -match '^FAIL paragraph-fields/About us/1/100: MCP set_paragraph_item_fields reported 1 failed item').Count | Should -Be 1
+        ($r.lines -match '^FAIL paragraph-fields/About us/1/100: MCP set_paragraph_item_fields reported 1 failed item\(s\)\. Reason: FirstButton: the value is not a button').Count | Should -Be 1
         $r.exit | Should -Be 1
     }
 

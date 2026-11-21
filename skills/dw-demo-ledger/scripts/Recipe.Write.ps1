@@ -18,7 +18,12 @@ function Invoke-RecipeWrite {
         $result = Invoke-RecipeMcpCall $operation $arguments $Run.cap 120 -AllowText
         # A batch save answers per-item counts; a failed item is a failed write whatever the call status says.
         $failed = Get-RecipeValue $result 'failed'
-        if ($failed.found -and (Test-RecipeNumber $failed.value) -and $failed.value -gt 0) { throw (New-RecipeFailure "MCP $operation reported $($failed.value) failed item(s).") }
+        if ($failed.found -and (Test-RecipeNumber $failed.value) -and $failed.value -gt 0) {
+            # The batch answer names the reason per item; without it the log says only that a write failed.
+            $errors = Get-RecipeValue $result 'errors'
+            $why = if ($errors.found) { @($errors.value | Where-Object { $null -ne $_ } | Select-Object -First 2 | ForEach-Object { $t = if ($_ -is [string]) { $_ } else { $_ | ConvertTo-Json -Compress -Depth 4 }; if ($t.Length -gt 240) { $t.Substring(0, 240) + '...' } else { $t } }) -join '; ' } else { '' }
+            throw (New-RecipeFailure ("MCP $operation reported $($failed.value) failed item(s)." + $(if ($why) { " Reason: $why" } else { '' })))
+        }
         return
     }
     if ($Binding.surface -eq 'admin-api') {
