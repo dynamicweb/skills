@@ -3,6 +3,22 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.9.2]
+
+- Reference corrections and measured shapes from demo builds on fresh DW 10.30.6 sites with MCP 0.6.3-BETA (the knowledge part of #264, without its new mechanisms):
+  - `dw-commerce-catalog`: the stock cart honours an unscoped quantity tier on 10.30.6 (the lowest matching row wins); the price write and read shapes (`get_products_by_sku`, `patch_products_safe`, `save_prices`, `get_prices_by_product_id`, `delete_prices`) and how a row's scope reads back.
+  - `dw-commerce-b2b`: the assortment grant's shapes, and that a signed-in buyer with no grant on an anonymous-allowed assortment is answered 404 by the delivery API product read while the anonymous visitor is served.
+  - `dw-commerce-orders`: the delivery API offers a payment or shipping method by customer group, not by `allowAnonymousUsers`, and the cart enforces neither; payment fees through `save_fees`; the cart path stores line and order totals on 10.30.6; a new section on seeding an order history the buyer sees (create, lines, place, complete, state, quotes, delete and reset).
+  - `dw-content-modelling`: new `debrand-scan.md` (find and replace a name across a website with `get_translatable_content` and `apply_translation`, send a batch in one call); the measured MCP page, row and paragraph shapes in `page-paragraph-writes.md`.
+  - `dw-data-access`: the order number series (`GetNumbers`, `NumberSave` keeps the counter) and `GetOrderList` for completed orders and quotes; a whole-model `PaymentSave` / `ShippingSave` round trip lands countries and groups on 10.30.6; the PIM workflow container needs the full command type name (the short `WorkflowSave` is the content workflow), `ProductCategoriesAll`, and `DataModelGroupSave` clearing the category; reading a user group's type with `GroupById`.
+  - `dw-extend-mcp-tools`: three tool-surface gaps (the price a user is charged, the order number series, favourite lists and order dates, quotes in `search_orders`).
+  - `dw-headless-delivery`: the product read prices for the caller, the buyer's order and quote lists, and the favourite list write shapes.
+  - `dw-pim-modelling`: new `model-writes.md` with the measured MCP shapes for categories, fields, data models, display groups, completeness rules, workflow states, products, images and assortments.
+  - `dw-pim-workflow`: `get_workflow_states` also returns the workflow containers on a hosted install.
+  - `dw-swift-building`: new `brand-style-writes.md` (files, fonts, typography with every line height, button style, colour schemes, website wiring, favicon cache, header and footer logos).
+  - `dw-users-permissions`: the MCP user, group and impersonation shapes (§17d), including the password on create and the group type on write and read.
+  - `dw-demo-swift`: new `storefront-browser-checks.md` (the measured Playwright selectors and paths for sign-in, list, product, cart, the CartV2 steps and the receipt, and their traps) and a trap row for an empty product list.
+
 ## [6.9.1]
 
 - `dw-swift-migrate-site` catalog import, platform facts from #197 (the rest of that PR is dropped in favour of 6.9.0's general approach): a Dynamicweb source is read through `/dwapi` (routes at `/dwapi/api.json`) instead of crawled; a second ecommerce language needs `ProductPrice`, `ProductNeverOutOfStock` and stock on its rows; prices and product relations stay cached until a restart, so plan one restart after all imports; related-product imports drop the sort order; activity settings read through MCP return protected values as `***`.

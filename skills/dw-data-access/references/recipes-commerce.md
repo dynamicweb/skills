@@ -134,7 +134,16 @@ value and no shipping-method group at all, while every MCP method read passed. T
 run was not recorded, so it is one measurement and not proof that no API route exists: re-probe with a
 full-model round trip and the row read-back below before relying on either answer.
 
-The route known to land is `SQL` on `EcomMethodCountryRelation`, with one schema trap:
+**Re-measured [dw 10.30.6]: a whole-model round trip lands.** Read the method with `PaymentById?Id=<id>`
+(or `PaymentsAll`, rows `model.data`), send the same members back in `PaymentSave {"Model": {...}}` with
+`countryRelationKeys: ["US|"]` and `userGroups: [<groupId>]`, and the read-back carries both;
+`EcomMethodCountryRelation` gains one `PAY` row per country and `EcomPayments.PaymentUserGroups` the group
+ids. `ShippingSave` with `ShippingsAll` is the same, and also takes `defaultFee` and `feeRulesSource`. A
+member left out of the model is saved empty (send `null` for one the read leaves null). The
+method's `userGroups` is what hides it from a visitor outside those groups (`GET /dwapi/ecommerce/payments` and the Swift checkout),
+while `allowAnonymousUsers: false` alone does not hide it from an anonymous visitor on the delivery API.
+
+The fallback route is `SQL` on `EcomMethodCountryRelation`, with one schema trap:
 **`MethodCountryRelRegionCode` is `NOT NULL`**, unlike every other optional column on that table. A
 country-only relation with no region restriction supplies `''`, not `NULL`; `NULL` terminates the whole
 `INSERT`, and nothing in the shape of the table hints at it.

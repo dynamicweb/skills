@@ -141,6 +141,16 @@ GET /dwapi/ecommerce/products/{id}
 GET /dwapi/ecommerce/products/{id}/{variantId}
 ```
 
+The price is computed for the caller [dw 10.30.6]: anonymous, or the user of the
+`Authorization: Bearer` token. `price.price` is what one unit costs that caller (the lowest
+matching row: default price, unscoped tier, user-group or customer-number row), and `prices` lists
+the price-matrix rows offered to the caller, one per break, as `{quantity, price: {price}}` (a
+contract row without a quantity shows as `quantity: 0`). Query `CurrencyCode` picks the currency.
+A `save_prices` or `patch_products_safe` write is served on the next read, with no cache flush,
+index build or recycle; the cart (`POST /dwapi/ecommerce/carts/additems` with `currency`,
+`language` and `products: [{productId, quantity}]`) charges the same lowest matching row, the
+quantity tier included.
+
 ### Variants
 
 ```http
@@ -315,6 +325,12 @@ GET /dwapi/ecommerce/orders/{secret}
 Authorization: Bearer <token>
 ```
 
+A buyer's `GET /dwapi/ecommerce/orders` lists completed orders only (`orders[]` with `id`,
+`purchaseOrderNumber`, `stateName`, `completed`, `price`). A quote is listed by
+`GET /dwapi/ecommerce/orders/search?Type=quote`; `Type` takes `order`, `quote`, `cart`, `recurringOrder` or
+`ledger`, and `RetrieveMode` takes `useUserId`, `useCustomerNumber`, `useImpersonationIds` or
+`useUserAndSecondaryUserIds` [dw 10.30.6].
+
 Search with filters:
 
 ```http
@@ -441,6 +457,12 @@ POST /dwapi/ecommerce/favorites/items/{listId}
 PATCH /dwapi/ecommerce/favorites/items/{listId}/{id}
 DELETE /dwapi/ecommerce/favorites/items/{listId}/{id}
 ```
+
+Measured [dw 10.30.6], with the owner's token: `POST /dwapi/ecommerce/favorites/lists` takes
+`{name, description, isDefault}` and answers the list with its `id`; `POST /dwapi/ecommerce/favorites/items/{listId}`
+takes `{productId, quantity, note}` (`productVariantId`, `unitId` optional); `GET` of the lists answers
+`{totalFavoriteListsCount, favoriteLists: [{id, name, description, isDefault, productList}]}`. The list
+belongs to the signed-in user: no MCP tool or Management API command reads or writes one.
 
 ---
 

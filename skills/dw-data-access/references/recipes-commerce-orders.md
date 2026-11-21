@@ -26,6 +26,8 @@ it, that it is **local installs only**, and the cache flush or host restart it o
 - [Gating an order backfill on live shop ids](#gating-an-order-backfill-on-live-shop-ids)
 - [Granting impersonation by SQL, then the Secondary users index build](#granting-impersonation-by-sql-then-the-secondary-users-index-build)
 - [Order-line verb traps on the Management API](#order-line-verb-traps-on-the-management-api)
+- [The order number series](#the-order-number-series)
+- [Listing completed orders and quotes: `GetOrderList`](#listing-completed-orders-and-quotes-getorderlist)
 
 ## Priced demo orders: place them through the storefront checkout
 
@@ -351,3 +353,30 @@ models suggest [dw 10.28.10 · mcp 0.6.0-beta].
 |---|---|---|---|
 | `OrderLineSave` with the model read from `GetOrderLineById` | 500 `could not be converted to Nullable OrderLineType, Path $.OrderType` | The read model's top-level `OrderType` (`"Order"`) is the order's type, and the save binds it as the line type. | Drop `OrderType` from the body and post the rest unchanged; read the line back with `GetOrderLineById`. |
 | `GetOrderLineById` with `OrderLineId` alone | 400 `Unable to load query parameters` | The verb exists and binds `OrderId` beside `OrderLineId`. | Pass both ids. |
+
+## The order number series
+
+Measured on DW 10.30.6. A new order's number is the `ORDER` series' prefix, its counter plus `add`, and its
+postfix; a blank site has prefix `ORDER` and counter 0, so it numbers `ORDER1`, `ORDER2`. No MCP tool reaches
+the series. The Management API reads and writes it:
+
+```text
+GET  /admin/api/GetNumbers
+     -> model.data[]: {id, name, description, counter, prefix, postFix, add}   (name ORDER is the order series)
+POST /admin/api/NumberSave
+     {"Model": {"id": "<id>", "name": "ORDER", "description": "<as read>", "counter": <as read>,
+                "add": <as read>, "prefix": "<prefix>", "postFix": "<postfix>"}}
+     -> {"status": "ok", "model": {...}}
+```
+
+`NumberSave` writes the prefix and postfix and **keeps the stored counter**: sent 5000, read back 1, and the
+next order took 2. The next `convert_cart_to_order` takes the new prefix at once, with no cache flush. The
+counter moves only by placing orders or by a local SQL update of `EcomNumbers.NumberCounter` for
+`NumberType = 'ORDER'`; never set it below a number already used, or two orders share one.
+
+## Listing completed orders and quotes: `GetOrderList`
+
+`GET /admin/api/GetOrderList?PageSize=<n>` lists **completed** orders only (`model.data[]`, with `id`,
+`purchaseOrderNumber`, `complete`, `stateId`, `customerAccessUserId`); `GetOrderList?OrderType=Quote` lists
+quotes, open ones included. It is the read for a quote by its reference, because MCP `search_orders` leaves
+quotes out. Measured on DW 10.30.6.

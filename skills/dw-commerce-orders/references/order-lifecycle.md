@@ -18,6 +18,7 @@ Sibling references in this skill: [`cart-commands.md`](cart-commands.md),
 - [OrderCustomerNumber is not set by create_orders](#ordercustomernumber-is-not-set-by-create_orders)
 - [Area-currency filters order history](#area-currency-filters-order-history)
 - [Orders built over MCP persist no totals](#orders-built-over-mcp-persist-no-totals-place-priced-orders-through-the-storefront)
+- [Seeding an order history the buyer sees](#seeding-an-order-history-the-buyer-sees)
 - [The platform OWNS ids and timestamps](#the-platform-owns-ids-and-timestamps--a-save-discards-the-ones-you-send)
 - [A re-saving verb reverts raw-SQL edits](#a-re-saving-verb-reverts-raw-sql-edits--orderrecalculate-writes-the-cached-order-back)
 - [`GetOrderList` inner-joins `EcomShops`](#getorderlist-inner-joins-ecomshops--orders-on-a-deleted-shop-vanish-from-every-commerce-grid)
@@ -77,6 +78,12 @@ totals. The tools that look like the repair are not one:
   currency has taken effect can land at ×100 (an explicit `12.50` stored as `1250`), and a quantity-tier
   `EcomPrices` row reprices a matching line to the tier price.
 
+**Re-measured on DW 10.30.6 with mcp 0.6.3-BETA, the cart path stores totals.** `create_orders` (`Cart`,
+with `userId`), `add_products_by_sku` without a price, then `convert_cart_to_order` stored each line at the
+buyer's price for its quantity (a contract, group or tier row, the lowest winning) and an order total equal
+to the line sum. See "Seeding an order history the buyer sees" below; the rest of this section records the
+earlier line [mcp 0.4.4].
+
 So **place priced demo orders through the storefront checkout**, as a signed-in buyer, and do not reprice
 seeded orders over MCP. In product, that means asking the user to place them on the storefront. Assert on
 the order, never on a line: `get_orders_by_ids` must show a non-zero order total equal to the sum of the
@@ -86,6 +93,31 @@ product: [`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-
 The tools become usable only through an MCP project change: price lines through the price provider, save
 after a recalculation, re-total the line and the order after `update_order_line`, and make
 `validate_order_prices` recompute.
+
+## Seeding an order history the buyer sees
+
+Measured on DW 10.30.6 with mcp 0.6.3-BETA. The order's reference is its purchase order number, the only
+key that survives:
+
+| Step | Call | Read back |
+|---|---|---|
+| Start the order | `create_orders {orders: [{shopId, userId, purchaseOrderNumber, orderType: "Cart"}]}` | `search_orders {request: {userId, pageSize}}`, `data[]` rows `{id, purchaseOrderNumber, isCart, stateId, completedDate, totalPriceWithoutVat}` |
+| Lines | `add_products_by_sku {orderId, lines: [{sku, quantity, unitPriceWithoutVat}]}`; no price takes the buyer's | `get_order_lines {orderId}`, `data[]` rows `{id, productId, quantity, unitPrice, totalPrice}` (no product number) |
+| Place it | `convert_cart_to_order {id}`: a new id from the ORDER number series | `search_orders`, `isCart: false` |
+| Complete it | `complete_order {id}`; the state is kept | `search_orders {request: {userId, completedStatus: "Completed"}}` lists completed orders only (`NotCompleted` the rest); `is_order_complete` answers bare text |
+| State | `set_order_state {id, stateId}` | `search_orders`, `stateId` |
+| A quote | `create_orders {orders: [{shopId, userId, purchaseOrderNumber, orderType: "Quote", stateId, customerComment}]}`, lines as above | `search_orders` leaves quotes out; the Management API `GetOrderList` with `OrderType=Quote` lists them |
+| Remove one | `delete_order {id, hardDelete: true}` for a cart or an open order; `{id, force: true}` soft-deletes a completed one (state Deleted, recoverable) | gone from `search_orders` and the buyer's delivery API list at once |
+| Reset to the seeded set | `search_orders {request: {userId, pageSize}}` (orders and carts) and the Management API `GetOrderList?OrderType=Quote&UserId=<id>` (quotes; `UserId` is the filter it honours, `CustomerId` and the like are ignored), then `delete_order {id, force: true}` for each row whose `purchaseOrderNumber` is not in the set you keep | `force: true` soft-deletes a cart, an open order, a completed order and a quote alike; every soft-deleted order leaves both reads and the buyer's delivery API lists at once |
+
+The buyer sees a **completed** order in `GET /dwapi/ecommerce/orders` (an open one is not listed), a quote
+in `GET /dwapi/ecommerce/orders/search?Type=quote`, and a favourite list in
+`GET /dwapi/ecommerce/favorites/lists`, each with the buyer's token. No MCP tool reads or writes a favourite
+list; only the signed-in buyer creates one, over the delivery API (`dw-headless-delivery`
+`endpoint-reference.md` "Favorites / Wishlists").
+No MCP tool sets an order's date (next section). The order number series is a Management API read and
+write ([`recipes-commerce-orders.md`](../../dw-data-access/references/recipes-commerce-orders.md)
+"The order number series"); a blank site numbers orders `ORDER1`, `ORDER2`.
 
 ## The platform OWNS ids and timestamps — a `*Save` discards the ones you send
 

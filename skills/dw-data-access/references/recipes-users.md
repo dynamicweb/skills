@@ -27,6 +27,7 @@ it is **local installs only**, and the cache flush or host restart it owes.
 - [Prove a page gate with two personas](#prove-a-page-gate-with-two-personas)
 - [Rebuild the Users index after an impersonation write](#rebuild-the-users-index-after-an-impersonation-write)
 - [Set a user group's type: `GroupSave` full-model round trip](#set-a-user-groups-type-groupsave-full-model-round-trip)
+- [Read a user group's type: `GroupById`](#read-a-user-groups-type-groupbyid)
 - [Flush the three permission caches after a direct table write](#flush-the-three-permission-caches-after-a-direct-table-write)
 - [Grant a backend area: a `Section` row through `PermissionSave`](#grant-a-backend-area-a-section-row-through-permissionsave)
 
@@ -466,6 +467,27 @@ SELECT AccessUserId, AccessUserParentId, AccessUserUserAndGroupType FROM AccessU
 
 Then sign in as the CSR and confirm the group lists on the Accounts page. Where it does not, refresh the
 security cache; a host restart is the reliable way.
+
+## Read a user group's type: `GroupById`
+
+In-product home: [dw-users-permissions](../../dw-users-permissions/SKILL.md)
+(`user-group-operations.md` §17d), which carries the MCP write of the type.
+
+Newer MCP add-ins write the type with `save_user_groups` (`userAndGroupType`), and `get_user_groups`
+returns it once it is set, leaving the member out while it is null [dw 10.30.6 · mcp 0.6.3-BETA].
+**Surface: Management API** `GroupById` (at `/admin/api/GroupById?Id=<groupId>`) reads it by group id:
+the user group's model carries `userAndGroupTypeSystemName`, `parentId` and `customerNumber` under
+`model`. `GroupTypesBySystemName?SystemName=SystemAccount` lists
+every group of one type under `model.data`. `UserById` does not read a group: it answers 400 for its
+query parameters.
+
+- **Why the higher surfaces do not cover it**: an MCP group read leaves the member out while the type
+  is null, so an absent type there does not tell an unset type from an older add-in that does not
+  project it; `GroupTypesBySystemName` also lists a whole type in one call.
+- **Hosted installs included**: this is an API read, not SQL.
+- **The debt it owes**: none.
+
+On a local install the column is `AccessUserUserAndGroupType` (the SELECT in the section above).
 
 ## Flush the three permission caches after a direct table write
 
