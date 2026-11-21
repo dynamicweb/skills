@@ -26,7 +26,12 @@ function Get-RecipeCapabilities {
             $listed = Get-DwMcpTools
             foreach ($tool in $listed) { $cap.tools[[string]$tool.name] = ConvertTo-RecipeData $tool.inputSchema; $cap.outputs[[string]$tool.name] = ConvertTo-RecipeData $tool.outputSchema }
             $cap.mcp = $true
-        } catch { $cap.errors += 'MCP tools/list failed; MCP bindings are unavailable.' }
+        } catch {
+            # The reason (a refused socket, a TLS failure, a 401) says what to fix; token-shaped text is masked and the line is bounded.
+            $why = (([string]$_.Exception.Message) -replace '\s+', ' ' -replace '(?i)Bearer\s+\S+', 'Bearer ***' -replace '(?i)\b(claude|mcp)\.[0-9a-f]{20,}', '***').Trim().TrimEnd('.')
+            if ($why.Length -gt 240) { $why = $why.Substring(0, 240) + '...' }
+            $cap.errors += 'MCP tools/list failed; MCP bindings are unavailable.' + $(if ($why) { " Reason: $why." } else { '' })
+        }
     }
     $cap.admin = 'admin-api' -in $cap.surfaces -and [bool]$ApiToken
     $cap.dwapi = 'dwapi' -in $cap.surfaces
