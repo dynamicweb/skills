@@ -7,12 +7,14 @@ PowerShell 7. Owning reference: ../references/contract.md. Imports the shared AP
 . ./Ledger.Transport.ps1
 #>
 #Requires -Version 7.0
+# Every HTTP call goes through Invoke-DwHttp (the shared transport's Dw.Http.ps1): the cmdlet as called, or Node in a shell whose PowerShell cannot open TLS connections.
+. (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Http.ps1')
 function Read-LedgerDescriptor {
     # The public descriptor identifies the release. One failed read is retried, so a hiccup is not reported as another release.
     param([string]$BaseUrl,[switch]$AllowSelfSignedCertificate,[int]$Attempts=3,[int]$DelayMs=1000)
     $skip=$AllowSelfSignedCertificate -or $BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)'
     for($attempt=1;;$attempt++){
-        try{return Invoke-RestMethod -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip}
+        try{return Invoke-DwHttp -Rest -Uri ($BaseUrl.TrimEnd('/')+'/admin/api/api.json') -TimeoutSec 20 -SkipCertificateCheck:$skip}
         catch{if($attempt -ge $Attempts){throw};Start-Sleep -Milliseconds ($DelayMs*$attempt)}
     }
 }
@@ -169,7 +171,7 @@ function Get-LedgerPersonaSignInObservation {
     $offenders=[Collections.Generic.List[object]]::new()
     foreach($persona in $personas){
         $body=@{username=$persona.userName;password=$persona.password}|ConvertTo-Json -Compress
-        $sign=Invoke-WebRequest -Uri ($base+'/dwapi/'+$Binding.operation) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept='application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$insecure
+        $sign=Invoke-DwHttp -Uri ($base+'/dwapi/'+$Binding.operation) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept='application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$insecure
         $status=[int]$sign.StatusCode
         if($status -ge 500){throw 'Sign-in request failed on the server.'}
         $token=$null
@@ -178,7 +180,7 @@ function Get-LedgerPersonaSignInObservation {
             if($answer -is [Collections.IDictionary] -and $answer.token -is [string] -and $answer.token.Trim()){$token=$answer.token}
         }
         if(-not $token){$offenders.Add([ordered]@{userName=$persona.userName;step='sign-in';status=$status;reason='No token was issued.'});continue}
-        $read=Invoke-WebRequest -Uri ($base+'/dwapi/'+$readAs) -Method Get -Headers @{Accept='application/json';Authorization='Bearer '+$token} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$insecure
+        $read=Invoke-DwHttp -Uri ($base+'/dwapi/'+$readAs) -Method Get -Headers @{Accept='application/json';Authorization='Bearer '+$token} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$insecure
         $token=$null
         $status=[int]$read.StatusCode
         if($status -ge 500){throw 'Signed-in read failed on the server.'}
@@ -205,7 +207,7 @@ function Read-LedgerDeliveryJson {
     $uri=$script:LedgerTarget.baseUrl+'/dwapi/'+$Route;if($pairs.Count){$uri+='?'+($pairs -join '&')}
     if(-not $script:LedgerDeliveryCache){$script:LedgerDeliveryCache=@{}}
     if($script:LedgerDeliveryCache.ContainsKey($uri)){return $script:LedgerDeliveryCache[$uri]}
-    $response=Invoke-WebRequest -Uri $uri -Method Get -Headers @{Accept='application/json'} -TimeoutSec 60 -SkipHttpErrorCheck -SkipCertificateCheck:$script:LedgerTarget.insecure
+    $response=Invoke-DwHttp -Uri $uri -Method Get -Headers @{Accept='application/json'} -TimeoutSec 60 -SkipHttpErrorCheck -SkipCertificateCheck:$script:LedgerTarget.insecure
     $status=[int]$response.StatusCode
     if($status -in @(401,403)){throw [UnauthorizedAccessException]::new('Delivery read is not authorised without a credential.')}
     if($status -eq 404){throw [InvalidOperationException]::new('Build input: a declared rendered measure names a product or feed the delivery API does not serve (404).')}
@@ -301,7 +303,7 @@ function Get-LedgerDwapiObservation {
     $query=if($Binding.arguments){Expand-LedgerArguments $Binding.arguments $Build}else{@{}}
     $pairs=@(foreach($key in @($query.Keys|Sort-Object)){[Uri]::EscapeDataString($key)+'='+[Uri]::EscapeDataString([string]$query[$key])})
     $uri=$script:LedgerTarget.baseUrl+'/dwapi/'+$route;if($pairs.Count){$uri+='?'+($pairs -join '&')}
-    $response=Invoke-WebRequest -Uri $uri -Method Get -Headers @{Accept='application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:LedgerTarget.insecure
+    $response=Invoke-DwHttp -Uri $uri -Method Get -Headers @{Accept='application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:LedgerTarget.insecure
     $status=[int]$response.StatusCode
     if($status -in @(401,403)){throw [UnauthorizedAccessException]::new('Delivery read is not authorised without a credential.')}
     if($status -eq 404){throw [InvalidOperationException]::new('Delivery route is not served by this target.')}

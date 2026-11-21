@@ -67,6 +67,10 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+# Every HTTP call goes through Invoke-DwHttp: the cmdlet as called, or Node in a shell whose
+# PowerShell cannot open TLS connections (see Dw.Http.ps1).
+. (Join-Path $PSScriptRoot 'Dw.Http.ps1')
+
 # The single browser-shaped User-Agent this module sends on web probes.
 # why: the target silently drops cart commands, and negotiates image content,
 # on this header - see Get-DwBrowserUserAgent for the measurement.
@@ -236,7 +240,7 @@ function Invoke-DwApi {
     # failing, so only a read is retried - a blind POST retry double-writes.
     $attempt = 0
     while ($true) {
-        try { return Invoke-RestMethod @params }
+        try { return Invoke-DwHttp -Rest @params }
         catch {
             $status = 0
             try { $status = [int]$_.Exception.Response.StatusCode.value__ } catch { $status = 0 }
@@ -295,12 +299,12 @@ function Initialize-DwMcp {
             clientInfo      = @{ name = 'Dw.Api.psm1'; version = '1.0' }
         }
     } | ConvertTo-Json -Depth 10
-    $r = Invoke-WebRequest -Uri $uri -Method Post -Body $body -Headers $headers `
+    $r = Invoke-DwHttp -Uri $uri -Method Post -Body $body -Headers $headers `
         -ContentType 'application/json' -TimeoutSec 60 `
         -SkipCertificateCheck:$script:DwState.SkipCert
     $sessionId = $r.Headers['mcp-session-id'] | Select-Object -First 1
     if ($sessionId) { $headers['mcp-session-id'] = $sessionId }
-    Invoke-WebRequest -Uri $uri -Method Post -Headers $headers `
+    Invoke-DwHttp -Uri $uri -Method Post -Headers $headers `
         -Body '{"jsonrpc":"2.0","method":"notifications/initialized"}' `
         -ContentType 'application/json' -TimeoutSec 30 `
         -SkipCertificateCheck:$script:DwState.SkipCert | Out-Null
@@ -351,7 +355,7 @@ function Invoke-DwMcp {
         jsonrpc = '2.0'; id = $script:DwState.McpRpcId; method = 'tools/call'
         params  = @{ name = $Tool; arguments = $Arguments }
     } | ConvertTo-Json -Depth 50
-    $r = Invoke-WebRequest -Uri "$($script:DwState.BaseUrl)/admin/mcp" -Method Post `
+    $r = Invoke-DwHttp -Uri "$($script:DwState.BaseUrl)/admin/mcp" -Method Post `
         -Body ([System.Text.Encoding]::UTF8.GetBytes($payload)) `
         -ContentType 'application/json; charset=utf-8' `
         -Headers $script:DwState.McpHeaders -TimeoutSec $TimeoutSec `
@@ -393,7 +397,7 @@ function Get-DwMcpTools {
             jsonrpc = '2.0'; id = $script:DwState.McpRpcId
             method  = 'tools/list'; params = $params
         } | ConvertTo-Json -Depth 10
-        $r = Invoke-WebRequest -Uri "$($script:DwState.BaseUrl)/admin/mcp" -Method Post `
+        $r = Invoke-DwHttp -Uri "$($script:DwState.BaseUrl)/admin/mcp" -Method Post `
             -Body $payload -ContentType 'application/json' `
             -Headers $script:DwState.McpHeaders -TimeoutSec 60 `
             -SkipCertificateCheck:$script:DwState.SkipCert
@@ -840,7 +844,7 @@ function Test-DwPageProbe {
     if ($null -ne $Body) { $params.Body = $Body }
 
     $response = $null
-    try { $response = Invoke-WebRequest @params }
+    try { $response = Invoke-DwHttp @params }
     catch {
         $caught = $_.Exception.Response
         if ($caught) { $response = $caught } else { $transportError = "$($_.Exception.Message)" }
@@ -910,7 +914,7 @@ function Get-DwServedFileHash {
     Assert-DwConnection | Out-Null
     # why: the target negotiates served content on the UA - see Get-DwBrowserUserAgent.
     $headers = @{ 'User-Agent' = Get-DwBrowserUserAgent }
-    $response = Invoke-WebRequest -Uri $Url -Method Get -Headers $headers `
+    $response = Invoke-DwHttp -Uri $Url -Method Get -Headers $headers `
         -SkipCertificateCheck:$script:DwState.SkipCert -SkipHttpErrorCheck `
         -TimeoutSec $TimeoutSec -ErrorAction Stop
     if ([int]$response.StatusCode -ge 400) {
@@ -1050,5 +1054,5 @@ Export-ModuleMember -Function @(
     'Get-DwSqlRows', 'Get-DwSqlScalar', 'Clear-DwServiceCache', 'Set-DwDbConnectionTrust',
     'Get-DwConnection', 'Get-DwBrowserUserAgent', 'Invoke-DwQuery', 'Get-DwTaskLastRun', 'Invoke-DwTaskRun',
     'Test-DwPageProbe', 'Get-DwServedFileHash', 'Get-DwSqlCount', 'ConvertTo-DwApiValue',
-    'Get-DwCategoryFieldSort'
+    'Get-DwCategoryFieldSort', 'Invoke-DwHttp', 'Reset-DwHttpTransport'
 )

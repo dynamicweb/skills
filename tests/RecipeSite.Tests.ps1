@@ -150,6 +150,7 @@ $global:SiteStub.calls.Add(@{recipe = $Recipe; baseUrl = $BaseUrl; apiToken = $A
 [IO.File]::WriteAllText($ReportPath, (@{schema = 1; recipe = $Recipe; steps = @(); checks = @(@{name = 'probe/p'; result = 'PASS'}); changed = $false; debtsOwed = @(); blocked = 0; passed = 1; total = 1} | ConvertTo-Json -Depth 5))
 exit 0
 '@
+            Copy-Item (Join-Path (Get-RepoRoot) 'skills/dw-data-access/scripts/Dw.Http.*') (Join-Path $root 'skills/dw-data-access/scripts')
             Set-Content -LiteralPath (Join-Path $root 'skills/dw-data-access/scripts/Dw.Api.psm1') -Encoding utf8 -Value @'
 function Connect-Dw { param($BaseUrl, $ApiToken, $McpToken, $SqlConnection, $SolutionPath, [switch]$AllowSelfSignedCertificate) $global:SiteStub.connected = $McpToken; @{BaseUrl = $BaseUrl} }
 function Invoke-DwMcp { param($Tool, [hashtable]$Arguments, [switch]$Raw, $TimeoutSec) $global:SiteStub.reads.Add($Tool); @{structuredContent = $global:SiteStub.site[$Tool]} }

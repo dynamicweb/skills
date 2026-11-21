@@ -23,6 +23,7 @@ function New-LedgerFixtureRepo {
     Copy-Item (Join-Path $source 'skills/dw-demo-ledger/assets/*.json') (Join-Path $skill 'assets')
     Copy-Item (Join-Path $source 'skills/dw-demo-ledger/assets/profiles/*.json') (Join-Path $skill 'assets/profiles')
     Copy-Item (Join-Path $source 'skills/dw-data-access/scripts/Dw.Api.psm1') (Join-Path $Path 'skills/dw-data-access/scripts')
+    Copy-Item (Join-Path $source 'skills/dw-data-access/scripts/Dw.Http.*') (Join-Path $Path 'skills/dw-data-access/scripts')
     $root=Join-Path $skill "assets/releases/$Version"
     $null=New-Item -ItemType Directory -Force -Path (Join-Path $root 'functions')
     Write-LedgerFixtureJson (Join-Path $root 'manifest.json') @{schema=1;dwVersion=$Version;functionsGlob='functions/*.json';coverageGlob='coverage/*.json'}

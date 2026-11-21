@@ -19,6 +19,7 @@ BeforeAll {
         $null = New-Item -ItemType Directory -Force (Join-Path $skill 'scripts'), (Join-Path $skill 'assets'), (Join-Path $root 'skills/dw-data-access/scripts'), (Join-Path $root 'skills/dw-demo-base/scripts')
         Copy-Item (Join-Path $script:Source 'scripts/*.ps1') (Join-Path $skill 'scripts')
         Get-ChildItem (Join-Path $script:Source 'assets') | Where-Object { $_.Name -ne 'releases' } | Copy-Item -Destination (Join-Path $skill 'assets') -Recurse
+        Copy-Item (Join-Path (Split-Path $script:Source) 'dw-data-access/scripts/Dw.Http.*') (Join-Path $root 'skills/dw-data-access/scripts')
         Set-Content -LiteralPath (Join-Path $root 'skills/dw-data-access/scripts/Dw.Api.psm1') -Encoding utf8 -Value @'
 function Write-StubLog([string]$Line) { $global:RecipeStub.log.Add($Line) }
 function Connect-Dw { param($BaseUrl, $ApiToken, $McpToken, $SqlConnection, $SolutionPath, [switch]$AllowSelfSignedCertificate)

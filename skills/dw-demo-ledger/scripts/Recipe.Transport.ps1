@@ -7,6 +7,8 @@ PowerShell 7. Owning reference: ../references/recipes.md. Uses the shared transp
 . ./Recipe.Transport.ps1
 #>
 #Requires -Version 7.0
+# Every HTTP call goes through Invoke-DwHttp (the shared transport's Dw.Http.ps1): the cmdlet as called, or Node in a shell whose PowerShell cannot open TLS connections.
+. (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Http.ps1')
 function ConvertTo-RecipeData {
     # A response as nested hashtables, the shape every recipe path walks.
     param($Value)
@@ -173,7 +175,7 @@ function Invoke-RecipeSignIn {
     param($Binding, $Context)
     $arguments = Expand-RecipeValue $Binding.arguments $Context
     $body = @{username = $arguments.username; password = $arguments.password} | ConvertTo-Json -Compress
-    $response = Invoke-WebRequest -Uri ($script:RecipeTarget.baseUrl + '/dwapi/' + $Binding.operation) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept = 'application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $response = Invoke-DwHttp -Uri ($script:RecipeTarget.baseUrl + '/dwapi/' + $Binding.operation) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept = 'application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
     $status = [int]$response.StatusCode
     if ($status -ge 500) { throw 'Sign-in request failed on the server.' }
     $signedIn = $false
@@ -188,7 +190,7 @@ function Get-RecipeSignInToken {
     if ($credential -isnot [Collections.IDictionary] -or -not $credential.username -or -not $credential.password) { throw (New-RecipeFault 'Runner input: a signed-in delivery read names no signIn username and password.') }
     $body = @{username = $credential.username; password = $credential.password} | ConvertTo-Json -Compress
     $route = @($Registry.dwapiSignInRoutes)[0]
-    $response = Invoke-WebRequest -Uri ($script:RecipeTarget.baseUrl + '/dwapi/' + $route) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept = 'application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $response = Invoke-DwHttp -Uri ($script:RecipeTarget.baseUrl + '/dwapi/' + $route) -Method Post -Body $body -ContentType 'application/json' -Headers @{Accept = 'application/json'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
     $token = $null
     if ([int]$response.StatusCode -eq 200) { try { $token = (ConvertFrom-Json -InputObject ([string]$response.Content) -AsHashtable).token } catch { $token = $null } }
     if ($token -isnot [string] -or -not $token.Trim()) { throw [UnauthorizedAccessException]::new("The signed-in delivery read could not sign in (HTTP $([int]$response.StatusCode)).") }
@@ -215,7 +217,7 @@ function Invoke-RecipeDeliveryGet {
     $uri = $script:RecipeTarget.baseUrl + '/dwapi/' + $route + $(if ($pairs.Count) { '?' + ($pairs -join '&') })
     $headers = @{Accept = 'application/json'}
     if ($Binding.handler -eq 'dwapi-signed-in-get') { $headers.Authorization = 'Bearer ' + (Get-RecipeSignInToken $Binding $Context $Registry) }
-    $response = Invoke-WebRequest -Uri $uri -Method Get -Headers $headers -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $response = Invoke-DwHttp -Uri $uri -Method Get -Headers $headers -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
     $status = [int]$response.StatusCode
     if ($status -in @(401, 403)) { throw [UnauthorizedAccessException]::new("Delivery read is not authorised ($($Binding.handler)).") }
     if ($status -ne 200) { throw (New-RecipeFault "Delivery route $($Binding.operation) answered HTTP $status.") }
@@ -228,7 +230,7 @@ function Invoke-RecipeStorefrontLinks {
     $region = [string]$Binding.operation
     $path = [string](Expand-RecipeValue $Binding.arguments $Context).path
     if ($path -notmatch '^/[A-Za-z0-9/_-]*$') { throw (New-RecipeFault "Runner input: storefront-links reads a site path such as /en-us/about, not '$path'.") }
-    $response = Invoke-WebRequest -Uri ($script:RecipeTarget.baseUrl + $path) -Method Get -Headers @{Accept = 'text/html'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
+    $response = Invoke-DwHttp -Uri ($script:RecipeTarget.baseUrl + $path) -Method Get -Headers @{Accept = 'text/html'} -TimeoutSec 30 -SkipHttpErrorCheck -SkipCertificateCheck:$script:RecipeTarget.insecure
     $status = [int]$response.StatusCode
     if ($status -ne 200) { throw (New-RecipeFailure "Storefront page $path answered HTTP $status.") }
     $part = [regex]::Match([string]$response.Content, "(?is)<$region\b[^>]*>(?<body>.*?)</$region>")
