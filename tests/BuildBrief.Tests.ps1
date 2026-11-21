@@ -35,6 +35,10 @@ Describe 'New-DwBuildBrief' {
         $r.text | Should -Match 'verify .*apply once .*-PayDebts -Apply.*final verify'
         $r.text | Should -Match "Make no write to the site until the delegate's apply has ended"
         $r.text | Should -Match 'You own the brief, the custom work, the final verify and the hand-in'
+        # The delegate finds the connection in the demo folder; only the secrets come from the shell it inherits.
+        $r.text | Should -Match 'reads the site connection itself from the folder that holds the site''s `\.mcp\.json`.*-SiteFolder'
+        $r.text | Should -Match 'Only `DW_RECIPE_SECRETS` and `DW_PERSONA_CREDENTIALS`.*must reach the delegate'
+        $r.text | Should -Not -Match 'DW_BASE_URL|DW_MCP_TOKEN|DW_API_TOKEN'
         $r.text | Should -Match 'hand-in names the orchestrator \(`model-mid`\), the recipe set''s model \(`model-small`; its summary prints `run by: model-small`\)'
         $r.lines.Count | Should -BeLessOrEqual 25
     }

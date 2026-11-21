@@ -114,7 +114,7 @@ fold-back ([`dw-demo-foldback`](../../dw-demo-foldback/SKILL.md)).
 | Skills alone | The harness records a `recipes` step in `flow-state.json`; its gate is the set's exit 0, and the instructions-used map names the set's report |
 | `/demo:*` command set | `/demo:impact` produces the data file with the analysis; `/demo:build` runs the set after sign-off and its validation pass reads the set's summary before the acceptance criteria |
 | Local install | `-SolutionPath <solution>` lets the set recycle a loopback host itself; `-AllowSql -SqlServer -Database` adds optional read-only checks |
-| Hosted install (URL + API key) | Set `DW_BASE_URL`, `DW_API_TOKEN` and, when the install exposes it, `DW_MCP_TOKEN`; no SQL. A recipe whose index row says hosted `no` reports its blocked steps; the recycle stays OPEN with the hosted route ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md)) |
+| Hosted install (URL + API key) | Run the set from the demo folder (its `.mcp.json`, and `demo-host.json` for the API key), or set `DW_BASE_URL`, `DW_API_TOKEN` and, when the install exposes it, `DW_MCP_TOKEN`; no SQL. A recipe whose index row says hosted `no` reports its blocked steps; the recycle stays OPEN with the hosted route ([`dw-demo-hosted`](../../dw-demo-hosted/SKILL.md)) |
 | Path A, YAML brand layer | The brand layer carries the brand: run the set with `-LayerDelivered brand` so `content.design-styles` verifies it, and apply the other sections. A data copy (catalogue, prices, users, history) needs no flag |
 | Path B, deliver then tools | Run the set with `-Apply` over the delivered edition |
 | Path C, tools only from blank | Run the set with `-Apply`; nothing is layer-delivered |
@@ -434,9 +434,17 @@ sets `DW_RECIPE_RUN_BY`) to every set run, and the summary prints `run by: <mode
 
 - the absolute paths of the customer data file, the skills checkout and a folder for its logs and
   reports;
-- the environment, set in its process and never pasted into the brief: `DW_BASE_URL`,
-  `DW_MCP_TOKEN` or `DW_API_TOKEN`, `DW_RECIPE_SECRETS`, `DW_PERSONA_CREDENTIALS`; plus
-  `-SolutionPath <solution>` for a loopback host it may recycle and `-AllowSelfSignedCertificate`
+- the demo folder: the set reads the site connection itself from the folder that holds the
+  site's `.mcp.json` (and the optional host facts file `demo-host.json`; dw-demo-ledger
+  [recipes.md](../../dw-demo-ledger/references/recipes.md) "Connection"), so the delegate runs it there or
+  passes `-SiteFolder <folder>`; `DW_BASE_URL`, `DW_MCP_TOKEN` and `DW_API_TOKEN` are needed only
+  where no such folder exists, and win over it when set. A mid- or small-tier delegate did not
+  find the keys on its own: two first builds ran the set with no connection (0 of 11, and 2 of 9
+  recipes) until the runner read the folder itself;
+- the secrets, only when this session has them: `DW_RECIPE_SECRETS` and `DW_PERSONA_CREDENTIALS`
+  come from the environment alone (no file form), so start the delegate's commands from the same
+  shell environment and never paste a value into the brief;
+- `-SolutionPath <solution>` for a loopback host it may recycle and `-AllowSelfSignedCertificate`
   for a local self-signed one;
 - the run order, each run's output saved to a log, with `-ReportPath <folder>/<run>.json` and
   `-RunBy <its model>`:

@@ -3,7 +3,7 @@
 READ-ONLY. Prints the brief that starts an orchestrating demo-build session, with the model split filled in; writes only -OutFile when given.
 .DESCRIPTION
 PowerShell 7. Owning reference: ../references/orchestrator.md ("Delegating the recipe set"). A session delegates the recipe set run to a cheaper model when the split is in the brief that starts it, and keeps the run on its own model when the split is only in a skill it reads later. This script makes that brief, so a launcher, a dispatcher or a person never retypes it.
-The build brief carries the measured split paragraph with the model ids filled in, the delegate's run order (verify, apply once, pay debts, final verify of Invoke-DwRecipeSet.ps1, each with -RunBy), the no-write rule while the delegate's apply runs, the orchestrator's ownership and the hand-in. The plan brief keeps the session read-only.
+The build brief carries the measured split paragraph with the model ids filled in, the delegate's run order (verify, apply once, pay debts, final verify of Invoke-DwRecipeSet.ps1, each with -RunBy), where the set finds the site connection (the demo folder, or -SiteFolder) and which secrets the delegate inherits, the no-write rule while the delegate's apply runs, the orchestrator's ownership and the hand-in. The plan brief keeps the session read-only.
 Model ids are the caller's: no default names a provider or a model. A model id or a path that holds a line break is refused. The output holds no date and nothing from the machine: the same input prints the same brief.
 .PARAMETER Phase
 build (default) or plan.
@@ -75,7 +75,7 @@ function Get-DwBriefLines {
         "- ${runOn}You own the brief, the custom work, the final verify and the hand-in; delegating the set never ends your work.",
         "- The delegate runs ``$set`` in this order, each run logged to $logText with ``-ReportPath $logText/<run>.json -RunBy $Small``: verify (``-InputPath $dataText``); apply once (``-Apply``); for each ``DEBT OPEN`` or ``DEBT FAIL`` line, ``-Only <owner> -PayDebts -Apply`` once; final verify.",
         '- The delegate makes no write by hand, edits neither the data file nor a recipe, and retries nothing outside that order: a failure is reported, not repaired. It returns each log and report path, the summary table, every line that is not PASS, the last line and each exit code.',
-        "- Environment for the delegate's process, never pasted into a brief: ``DW_BASE_URL``, ``DW_MCP_TOKEN`` or ``DW_API_TOKEN``, ``DW_RECIPE_SECRETS``, ``DW_PERSONA_CREDENTIALS``.",
+        "- The set reads the site connection itself from the folder that holds the site's ``.mcp.json`` (and ``demo-host.json`` when there is one): the delegate runs it there or passes ``-SiteFolder <that folder>``. Only ``DW_RECIPE_SECRETS`` and ``DW_PERSONA_CREDENTIALS``, when this session has them, must reach the delegate: start its commands from this shell's environment. They have no file form; never paste a value into a brief.",
         "- Make no write to the site until the delegate's apply has ended. Meanwhile read the brief's custom work, the owning skills and the site's templates.")
     if ($down) { $lines += "- Routine custom pieces may go to a sub-agent on ``$Mid``, named in the call; you still own and check them." }
     if ($up) { $lines += "- The hardest custom pieces$pieces may go up to a sub-agent on ``$Top``, named in the call. Say in the hand-in which pieces went up." }
