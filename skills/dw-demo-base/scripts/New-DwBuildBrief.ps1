@@ -22,7 +22,7 @@ Optional. The model for the phase 3 checkers. Default: the builder model.
 .PARAMETER EscalateFor
 Optional names of custom pieces that must be their own top-tier builder packages. Needs -TopModel.
 .PARAMETER MaxParallel
-The most builder sub-agents at once (default 4).
+The most builder sub-agents at once (default 8).
 .PARAMETER DataFile
 Path of the customer data file the delegate reads. Printed as given; otherwise a placeholder.
 .PARAMETER SkillsPath
@@ -49,7 +49,7 @@ param(
     [string]$BuilderModel,
     [string]$CheckerModel,
     [string[]]$EscalateFor,
-    [ValidateRange(1, 16)][int]$MaxParallel = 4,
+    [ValidateRange(1, 16)][int]$MaxParallel = 8,
     [string]$DataFile,
     [string]$SkillsPath,
     [string]$LogFolder,
@@ -60,7 +60,7 @@ $ErrorActionPreference = 'Stop'
 function Get-DwBriefLines {
     # The brief as lines. Pure: no clock, no machine state, so a test pins its output.
     param([string]$Phase, [string]$Orchestrator, [string]$Small, [string]$Mid, [string]$Top, [string]$Builder, [string]$Checker,
-        [string[]]$Escalate, [int]$MaxParallel = 4, [string]$Data, [string]$Skills, [string]$Logs)
+        [string[]]$Escalate, [int]$MaxParallel = 8, [string]$Data, [string]$Skills, [string]$Logs)
     $self = if ($Orchestrator) { "``$Orchestrator``" } else { 'the model you run on' }
     $onModel = if ($Orchestrator) { ", on ``$Orchestrator``" } else { '' }
     $runOn = if ($Orchestrator) { "You run on ``$Orchestrator``. " } else { '' }
@@ -92,10 +92,11 @@ function Get-DwBriefLines {
         '- The delegate makes no write by hand, edits neither the data file nor a recipe, and retries nothing outside that order: a failure is reported, not repaired. It returns each log and report path, the summary table, every line that is not PASS, the last line and each exit code.',
         "- The set reads the site connection itself from the folder that holds the site's ``.mcp.json`` (and ``demo-host.json`` when there is one): the delegate runs it there or passes ``-SiteFolder <that folder>``. Only ``DW_RECIPE_SECRETS`` and ``DW_PERSONA_CREDENTIALS``, when this session has them, must reach the delegate: start its commands from this shell's environment. They have no file form; never paste a value into a brief.",
         "- Meanwhile you read the plan and cut the custom work into independent work packages. Each names the files and templates, pages and platform objects it alone may write, its moment or moments, and its acceptance check. Make no write to the site until the delegate's apply has ended.",
-        "- Phase 2, as soon as the apply has ended: start one builder sub-agent per package at the same time, at most $MaxParallel at once, and name the model in every call. Custom templates and logic$pieces on $builderText; bulk mechanical writes (stock rows, page permissions, labels) on ``$Small``; routine content such as translation batches on $routineText.",
-        '- Parallel writers stay safe: ownership is disjoint, and a shared file (a shared stylesheet, a shared layout, the data file) has exactly one owner package or is edited only by you at merge. A site restart or recycle, an index rebuild or a global setting (currency, language layers, order states, permissions on shared pages) is yours alone, announced, between waves. A builder makes no test order or cart it does not remove, and reports every object it created.',
+        "- Phase 2, as soon as the apply has ended, in one wave. First make, in one pass, every global change the packages need (currency, language layers, order states, custom fields, permissions on shared pages) and restart or recycle once. Then start one builder sub-agent per package at the same time, at most $MaxParallel at once, and name the model in every call. No package waits for another: where one needs another's output, write the contract (names, ids, URLs) into both briefs before the wave starts. Custom templates and logic$pieces on $builderText; bulk mechanical writes (stock rows, page permissions, labels) on ``$Small``; routine content such as translation batches on $routineText.",
+        '- Parallel writers stay safe: ownership is disjoint, and a shared file (a shared stylesheet, a shared layout, the data file) has exactly one owner package or is edited only by you at merge. A site restart or recycle, an index rebuild or a global setting (currency, language layers, order states, permissions on shared pages) is yours alone: before the wave where you can, announced to the running builders when it cannot wait. A builder makes no test order or cart it does not remove, and reports every object it created.',
         '- The recipe set builds the data foundation, not the demo. The hand-in is due when every moment of the brief is built and checked on the site, or when a moment was tried and you can say what stopped it. Handing in with moments not attempted is an unfinished build.',
-        "- Phase 3, independent check: each moment is checked on the live site by a fresh sub-agent$checkerText that did not build it, all in parallel, in a real browser where the agent has one, signed in as the personas, against the brief's observable outcomes. One more checker covers: another account's data reachable by any persona or by URL, documents reachable without sign-in, leftover sample content, leftover test orders, carts or stock changes, every language's catalogue non-empty, 390 px width.",
+        "- Phase 3, independent check: each moment is checked on the live site by a fresh sub-agent$checkerText that did not build it, started as soon as that moment's packages report done and not after the last builder, in a real browser where the agent has one, signed in as the personas, against the brief's observable outcomes. One more checker covers: another account's data reachable by any persona or by URL, documents reachable without sign-in, leftover sample content, leftover test orders, carts or stock changes, every language's catalogue non-empty, 390 px width.",
+        '- Keep a progress file from the first package on: per moment the package, its builder, its checker and the verdict so far. A session that is stopped then still leaves its state.',
         "- A failure goes back to its owning builder once. Then you reset the demo data to the plan's opening state and verify the reset.",
         "- Hand in from the checkers' evidence only: a moment holds only when a checker that did not build it saw it; otherwise it is partly or not checked, with the reason.")
     $handIn = "- The hand-in names the orchestrator ($self), the recipe set's model (``$Small``; its summary prints ``run by: $Small``), the model that built each package and the model that checked each moment"

@@ -56,15 +56,19 @@ Describe 'New-DwBuildBrief' {
         $text.IndexOf('Phase 1') | Should -BeLessThan $text.IndexOf($noWrite)
         $text.IndexOf($noWrite) | Should -BeLessThan $text.IndexOf('Phase 2')
         # Phase 2: one builder per package at once, each tier named, the cap, and the parallel-writer rules.
-        $text | Should -Match 'one builder sub-agent per package at the same time, at most 4 at once, and name the model in every call'
+        $text | Should -Match 'one builder sub-agent per package at the same time, at most 8 at once, and name the model in every call'
+        $text | Should -Match 'in one wave\. First make, in one pass, every global change the packages need'
+        $text | Should -Match 'No package waits for another'
         $text | Should -Match 'Custom templates and logic on `model-top`; bulk mechanical writes \(stock rows, page permissions, labels\) on `model-small`; routine content such as translation batches on `model-mid`'
         $text | Should -Match 'ownership is disjoint.*exactly one owner package or is edited only by you at merge'
-        $text | Should -Match 'restart or recycle, an index rebuild or a global setting \(currency, language layers, order states, permissions on shared pages\) is yours alone, announced, between waves'
+        $text | Should -Match 'restart or recycle, an index rebuild or a global setting \(currency, language layers, order states, permissions on shared pages\) is yours alone: before the wave where you can, announced to the running builders when it cannot wait'
         $text | Should -Match 'no test order or cart it does not remove, and reports every object it created'
         # Phase 3: a checker that did not build the moment, the cross-cutting checker, one return, then a reset.
         $text | Should -Match 'each moment is checked on the live site by a fresh sub-agent on `model-top` that did not build it'
         foreach ($c in @('another account''s data reachable by any persona or by URL', 'documents reachable without sign-in', 'leftover sample content',
                 'leftover test orders, carts or stock changes', 'every language''s catalogue non-empty', '390 px width')) { $text | Should -Match ([regex]::Escape($c)) }
+        $text | Should -Match 'started as soon as that moment''s packages report done and not after the last builder'
+        $text | Should -Match 'Keep a progress file from the first package on'
         $text | Should -Match 'goes back to its owning builder once\. Then you reset the demo data to the plan''s opening state and verify the reset'
         $text | Should -Match 'a moment holds only when a checker that did not build it saw it; otherwise it is partly or not checked, with the reason'
         $text.IndexOf('Phase 2') | Should -BeLessThan $text.IndexOf('Phase 3')

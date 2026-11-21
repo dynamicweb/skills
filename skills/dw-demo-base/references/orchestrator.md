@@ -399,7 +399,15 @@ Measured on first builds of one nine-moment assignment on fresh sites [dw 10.30 
   downloadable without sign-in, an empty translated catalogue, a wrong price after a customer
   switch. The orchestrator had checked its own work.
 
-Cost is the same either way, so a build is set up for speed with reliability. The construction,
+- With the construction below, builders in one wave and each moment checked as soon as its
+  packages were done, the first build was complete at minute 44 and all nine moments held with
+  independent checkers at minute 93, after two fix rounds for faults the builders had not seen
+  (stock taken from the wrong location on a reorder, a page open without sign-in, tax missing on
+  the stored order). It cost about three times the serial build. With the builders in two waves
+  the checkers were still running at a 70 minute limit.
+
+Delegating down does not change the price; parallel top-tier builders and checkers do. The
+parallel construction buys checked work, not a shorter run. The construction,
 which [`scripts/New-DwBuildBrief.ps1`](../scripts/New-DwBuildBrief.ps1) prints as the build brief:
 
 1. **The orchestrator runs on the top tier.** A lower tier started as orchestrator gets the same
@@ -410,15 +418,17 @@ which [`scripts/New-DwBuildBrief.ps1`](../scripts/New-DwBuildBrief.ps1) prints a
    platform objects it alone may write, its moments and its acceptance check. No site write
    before the delegate's apply has ended.
 3. **Phase 2, parallel builders.** When the apply has ended, one builder sub-agent per package
-   starts at the same time (at most four at once by default), the model named in every call:
+   starts at the same time, in one wave (at most eight at once by default), after the
+   orchestrator made every global change the packages need in one pass; no package waits for
+   another, a dependency is a contract written into both briefs, the model named in every call:
    top for custom templates and logic, small for bulk mechanical writes, mid for routine content.
    Ownership is disjoint; a shared file (a shared stylesheet, a shared layout, the data file) has
    one owner package or is edited only by the orchestrator at merge. A site restart or recycle,
    an index rebuild or a global setting (currency, language layers, order states, permissions on
-   shared pages) is the orchestrator's alone, announced, between waves. A builder removes every
+   shared pages) is the orchestrator's alone, before the wave where it can be. A builder removes every
    test order or cart it makes and reports every object it created.
 4. **Phase 3, independent check.** Each moment is checked on the live site by a fresh sub-agent
-   that did not build it, in parallel, in a real browser where the agent has one, signed in as
+   that did not build it, started as soon as that moment's packages are done, in a real browser where the agent has one, signed in as
    the personas, against the brief's observable outcomes. One more checker covers what cuts
    across: another account's data reachable by a persona or by URL, documents reachable without
    sign-in, leftover sample content, leftover test orders, carts or stock changes, a non-empty
