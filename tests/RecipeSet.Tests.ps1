@@ -12,20 +12,20 @@ BeforeAll {
         $root = Join-Path $TestDrive ([guid]::NewGuid().ToString('n'))
         $skill = Join-Path $root 'skills/dw-demo-ledger'
         $null = New-Item -ItemType Directory -Force (Join-Path $skill 'scripts'), (Join-Path $skill 'assets')
-        foreach ($f in @('Invoke-DwRecipeSet.ps1', 'Ledger.Core.ps1', 'Recipe.Core.ps1')) { Copy-Item (Join-Path $script:Source "scripts/$f") (Join-Path $skill 'scripts') }
+        foreach ($f in @('Invoke-DwRecipeSet.ps1', 'Ledger.Core.ps1', 'Recipe.Core.ps1', 'Recipe.Site.ps1')) { Copy-Item (Join-Path $script:Source "scripts/$f") (Join-Path $skill 'scripts') }
         foreach ($f in @('recipe.schema.json', 'recipe-input.schema.json', 'recipe-input.example.json')) { Copy-Item (Join-Path $script:Source "assets/$f") (Join-Path $skill 'assets') }
         Copy-Item (Join-Path $script:Source 'assets/recipes') (Join-Path $skill 'assets') -Recurse
         # The stub runner: same parameters, one recorded call, a report shaped like the real one.
         Set-Content -LiteralPath (Join-Path $skill 'scripts/Invoke-DwRecipe.ps1') -Encoding utf8 -Value @'
 [CmdletBinding(SupportsShouldProcess)]
-param([string]$Recipe, [string]$InputPath, [switch]$Apply, [string]$BaseUrl, [string]$ApiToken, [string]$McpToken, [switch]$McpOnly,
+param([string]$Recipe, [string]$InputPath, [switch]$Apply, [string]$BaseUrl, [string]$ApiToken, [string]$McpToken, [string]$SiteFolder, [hashtable]$BuildValues, [switch]$McpOnly,
     [string[]]$Surfaces, [switch]$AllowSql, [string]$SqlServer, [string]$Database, [string]$LedgerBuildFile, [string]$Manifest, [string]$SolutionPath,
     [string]$Debts = 'Run', [string[]]$DebtNames, [switch]$SkipVerify, [string]$ReportPath, [switch]$AllowSelfSignedCertificate)
 $s = $global:SetStub
 $area = $Recipe.Split('.')[0]
 $doc = Get-Content -LiteralPath (Join-Path $PSScriptRoot "../assets/recipes/$area/$Recipe.json") -Raw | ConvertFrom-Json -AsHashtable
 $mode = if ($Debts -eq 'Only') { 'debts' } elseif ($Apply) { 'apply' } else { 'verify' }
-$s.calls.Add([ordered]@{recipe = $Recipe; mode = $mode; debts = @($DebtNames | Where-Object { $_ }); skipVerify = [bool]$SkipVerify; defer = ($Debts -eq 'Defer'); mcpOnly = [bool]$McpOnly; apiToken = $ApiToken})
+$s.calls.Add([ordered]@{recipe = $Recipe; mode = $mode; debts = @($DebtNames | Where-Object { $_ }); skipVerify = [bool]$SkipVerify; defer = ($Debts -eq 'Defer'); mcpOnly = [bool]$McpOnly; apiToken = $ApiToken; mcpToken = $McpToken; baseUrl = $BaseUrl; buildValues = $BuildValues})
 $changed = $mode -eq 'apply' -and -not $s.settled.Contains($Recipe)
 $state = if ($mode -eq 'apply') { if ($changed) { 'CREATED' } else { 'UNCHANGED' } } elseif ($s.settled.Contains($Recipe) -or $s.applied.Contains($Recipe)) { 'UNCHANGED' } else { 'WOULD-CREATE' }
 if ($mode -eq 'apply') { $null = $s.applied.Add($Recipe) }

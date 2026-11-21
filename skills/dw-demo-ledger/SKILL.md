@@ -94,6 +94,7 @@ the delegate, what to demand back and how to read its report:
 | [Invoke-DwRecipeSet.ps1](scripts/Invoke-DwRecipeSet.ps1) | Reads target; with -Apply writes every selected recipe's objects and pays the debts once | A whole build from one input file: select, order, apply, pay, verify, one summary |
 | [Find-DwRecipe.ps1](scripts/Find-DwRecipe.ps1) | Reads recipes | Recipes for a function or area, their modes and proven state |
 | [Recipe.Core.ps1](scripts/Recipe.Core.ps1) | Definitions only | Paths and tokens |
+| [Recipe.Site.ps1](scripts/Recipe.Site.ps1) | Definitions only | The site connection read from the demo folder (`.mcp.json`, `demo-host.json`), and `build` values read from a site with one candidate |
 | [Recipe.Match.ps1](scripts/Recipe.Match.ps1) | Definitions only | Typed comparison, natural-key matching, skipWhen conditions and binding selection |
 | [Recipe.Transport.ps1](scripts/Recipe.Transport.ps1) | Reads target when called | Allowlisted MCP, Management API, delivery and guarded local SQL reads |
 | [Recipe.Write.ps1](scripts/Recipe.Write.ps1) | Writes when called with -Apply | One allowlisted MCP or Management API write |

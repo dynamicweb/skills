@@ -5,7 +5,7 @@ WRITES: every recipe the customer data file has a section for, only with -Apply;
 PowerShell 7. Owning reference: ../references/recipes.md ("Running a whole build"). One command for a whole build: it reads one customer data file, selects every recipe whose input section the file holds (assets/recipes, minus -Skip, or only -Only), orders them by their dependsOn and runsLast declarations (the order references/recipe-index.md prints), and runs each through Invoke-DwRecipe.ps1.
 Without -Apply each recipe runs verify-only once, in order. With -Apply there are three passes: (1) apply every recipe in order with its debts deferred and no probes; a debt that a later recipe names in dependsOn.debtsPaid is paid before that recipe runs; (2) pay the owed debts once, deduplicated across recipes, in the order assortments, flushes, index builds, recycle, each through the recipe that owes it (Invoke-DwRecipe.ps1 -Debts Only); (3) verify every recipe again without -Apply, so the steps report UNCHANGED and the probes decide. -PayDebts pays the debts of the selected recipes in pass 2 even when nothing changed: the host primitives (index build, assortment build, flush, recycle) on their own.
 Before anything runs, a de-brand section's forbidden text found in another section of the input is refused: the next apply would write it back and the build would never settle.
-Output: each recipe's own lines under a "== <recipe> <pass>" header, then "SUMMARY", a "run by: <label>" line (-RunBy, else DW_RECIPE_RUN_BY, else "not stated"), one summary table and last "recipe set: n of m recipes passed". Exit 0 only when every selected recipe passed its last pass and every debt was paid. Connection and secrets as Invoke-DwRecipe.ps1 (DW_BASE_URL, DW_MCP_TOKEN, DW_API_TOKEN, DW_RECIPE_SECRETS, DW_PERSONA_CREDENTIALS); no token or secret is printed or written to the report.
+Output: each recipe's own lines under a "== <recipe> <pass>" header, then "SUMMARY", a "run by: <label>" line (-RunBy, else DW_RECIPE_RUN_BY, else "not stated"), one summary table and last "recipe set: n of m recipes passed". Exit 0 only when every selected recipe passed its last pass and every debt was paid. Connection and secrets as Invoke-DwRecipe.ps1: a parameter, then DW_BASE_URL, DW_MCP_TOKEN, DW_API_TOKEN, then the demo folder (-SiteFolder, else the current directory) with the site's .mcp.json and the optional demo-host.json, resolved once for the set with one NOTE line per value naming the file; DW_RECIPE_SECRETS and DW_PERSONA_CREDENTIALS come from the environment only. A {build.*} member a selected recipe reads and the input leaves out is read from the site once, before any recipe runs: one candidate is used and named in a NOTE line, several stop the set with the candidates and the member to add. No token or secret is printed or written to the report.
 .PARAMETER InputPath
 Customer data file matching assets/recipe-input.schema.json.
 .PARAMETER Apply
@@ -23,7 +23,9 @@ Target URL, otherwise DW_BASE_URL.
 .PARAMETER ApiToken
 Management API credential, otherwise DW_API_TOKEN.
 .PARAMETER McpToken
-MCP credential, otherwise DW_MCP_TOKEN.
+MCP credential, otherwise DW_MCP_TOKEN, otherwise the site folder.
+.PARAMETER SiteFolder
+The demo folder that holds the site's .mcp.json and, optionally, demo-host.json. A value given as a parameter or in the environment wins. Default: the current directory.
 .PARAMETER McpOnly
 Use the MCP tools only, as the in-product agent would.
 .PARAMETER AllowSql
@@ -60,6 +62,7 @@ param(
     [switch]$PayDebts,
     [string[]]$LayerDelivered,
     [string]$BaseUrl, [string]$ApiToken, [string]$McpToken,
+    [string]$SiteFolder,
     [switch]$McpOnly,
     [switch]$AllowSql, [string]$SqlServer, [string]$Database,
     [string]$LedgerBuildFile, [string]$Manifest,
@@ -71,6 +74,7 @@ param(
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Ledger.Core.ps1')
 . (Join-Path $PSScriptRoot 'Recipe.Core.ps1')
+. (Join-Path $PSScriptRoot 'Recipe.Site.ps1')
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $Only = Split-LedgerList $Only; $Skip = Split-LedgerList $Skip; $LayerDelivered = Split-LedgerList $LayerDelivered
 $runner = Join-Path $PSScriptRoot 'Invoke-DwRecipe.ps1'
@@ -157,8 +161,40 @@ try {
     $applied = $Apply -and $PSCmdlet.ShouldProcess('recipe set', 'apply the recipes and pay their debts')
     Write-SetLine "NOTE recipe set: $(if ($applied) { 'apply' } else { 'verify-only, nothing is written' }); order: $($order -join ', ')"
 
+    # The connection, once for the set: parameter, environment, then the demo folder. Each recipe run gets the values in
+    # this process (never on a command line), so it neither reads the files again nor repeats the NOTE lines.
+    $conn = Resolve-RecipeConnection -SiteFolder $SiteFolder -BaseUrl $BaseUrl -ApiToken $ApiToken -McpToken $McpToken
+    foreach ($note in $conn.notes) { Write-SetLine $note }
+    foreach ($gap in @(Get-RecipeConnectionGaps $conn)) { if (-not ($McpOnly -and $gap -like '*Management API*')) { Write-SetLine $gap } }
     $common = @{InputPath = $InputPath}
-    foreach ($name in @('BaseUrl', 'ApiToken', 'McpToken', 'SqlServer', 'Database', 'SolutionPath')) { if ($PSBoundParameters.ContainsKey($name)) { $common[$name] = $PSBoundParameters[$name] } }
+    foreach ($name in @('SqlServer', 'Database', 'SolutionPath', 'SiteFolder')) { if ($PSBoundParameters.ContainsKey($name)) { $common[$name] = $PSBoundParameters[$name] } }
+    if ($conn.baseUrl) { $common.BaseUrl = $conn.baseUrl }
+    if ($conn.apiToken) { $common.ApiToken = $conn.apiToken }
+    if ($conn.mcpToken) { $common.McpToken = $conn.mcpToken }
+    # {build.*} a selected recipe reads and the input leaves out: read from the site once, before any recipe runs.
+    $build = @{}
+    if ($LedgerBuildFile) {
+        $declared = Read-LedgerJson $LedgerBuildFile (Join-Path $assets 'build.schema.json')
+        foreach ($k in @('areaId', 'defaultLanguage', 'pimShop')) { if ($declared.Contains($k)) { $build[$k] = $declared[$k] } }
+    } elseif ($data.Contains('build')) { foreach ($k in @($data.build.Keys)) { $build[[string]$k] = $data.build[$k] } }
+    $needs = @(Get-RecipeBuildNeeds @($order | ForEach-Object { $selected[$_] }) $build)
+    if ($needs.Count) {
+        $reader = $null
+        if ($conn.mcpToken -and $conn.baseUrl) {
+            Import-Module (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Api.psm1') -Force -ErrorAction Stop
+            $null = Connect-Dw -BaseUrl $conn.baseUrl -ApiToken $conn.apiToken -McpToken $conn.mcpToken -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
+            $reader = {
+                param($tool)
+                $raw = Invoke-DwMcp -Tool $tool -Arguments @{} -Raw
+                if ($raw.isError) { throw (New-RecipeFault "Runner input: MCP $tool answered an error result, so the build section cannot be read from the site; add it to the data file.") }
+                $json = if ($raw.structuredContent) { $raw.structuredContent | ConvertTo-Json -Depth 30 -Compress } else { (@($raw.content | ForEach-Object { $_.text })) -join "`n" }
+                return , (ConvertFrom-Json -InputObject $json -AsHashtable -NoEnumerate)
+            }
+        }
+        $resolved = Resolve-RecipeBuildDefaults $needs $reader
+        foreach ($note in $resolved.notes) { Write-SetLine $note }
+        $common.BuildValues = $resolved.values
+    }
     foreach ($name in @('McpOnly', 'AllowSql', 'AllowSelfSignedCertificate')) { if ($PSBoundParameters.ContainsKey($name)) { $common[$name] = [bool]$PSBoundParameters[$name] } }
     $verifyExtra = @{}
     if ($LedgerBuildFile) { $verifyExtra.LedgerBuildFile = $LedgerBuildFile }

@@ -109,7 +109,7 @@ function Get-RecipeSurfaceFault {
             # A delete is a list of its own, so removing data is reviewed apart from writing it.
             $list = switch ($Kind) { 'write' { $Registry.recipeWriteTools } 'delete' { $Registry.recipeDeleteTools } default { @($Registry.mcpReadTools) + @($Registry.recipeRenderedReadTools) } }
             if ($Operation -cnotin @($list)) { return "MCP $Operation is not on the recipe $Kind allowlist" }
-            if (-not $Capabilities.mcp) { return 'MCP is not connected (DW_MCP_TOKEN)' }
+            if (-not $Capabilities.mcp) { return 'MCP is not connected (DW_MCP_TOKEN, or run from the folder that holds the site''s .mcp.json)' }
             if (-not $Capabilities.tools.Contains($Operation)) { return "MCP $Operation is not offered by this target's tools/list" }
             if ($Binding.requiresSchema) { $gap = Get-RecipeSchemaGap $Binding.requiresSchema $Operation $Capabilities; if ($gap) { return $gap } }
         }
@@ -117,7 +117,7 @@ function Get-RecipeSurfaceFault {
             if ($Kind -eq 'delete') { return 'a recipe deletes through MCP only (recipeDeleteTools)' }
             $list = if ($Kind -eq 'write') { $Registry.recipeAdminCommands } else { $Registry.adminReadQueries }
             if ($Operation -cnotin @($list)) { return "Management API $Operation is not on the recipe $Kind allowlist" }
-            if (-not $Capabilities.admin) { return 'the Management API is not connected (DW_API_TOKEN)' }
+            if (-not $Capabilities.admin) { return 'the Management API is not connected (DW_API_TOKEN, or run from the site folder whose demo-host.json names the keys file)' }
         }
         'sql' {
             if ($Kind -ne 'read') { return 'SQL never writes in a recipe' }

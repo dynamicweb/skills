@@ -4,7 +4,7 @@ WRITES: the objects a recipe ensures, deletes what a prune step removes and sets
 .DESCRIPTION
 PowerShell 7. Owning reference: ../references/recipes.md. Runs one recipe (assets/recipes/<area>/<id>.json) against one customer data file. The recipe and the input are validated against their schemas first. Each step finds its objects by natural key through the first binding the target offers (MCP tools/list, then the Management API, then local SQL for reads), so a verify-only run on a host a layer already delivered reports every object UNCHANGED: that is how build path A uses a recipe. With -Apply, absent objects are created and differing ones updated, every write is read back, and the debts run when anything changed. A step with no eligible binding is BLOCKED with the reason. Then the probes run, and the recipe's ledger check ids run through Invoke-DwLedgerChecks.ps1 when -LedgerBuildFile and -Manifest are given.
 Output lines: STEP <step> <CREATED|UPDATED|DELETED|RETIRED|UNCHANGED|BLOCKED|WOULD-CREATE|WOULD-UPDATE|WOULD-DELETE|WOULD-RETIRE> <natural key>; PASS <check>; FAIL <check>: <reason>; OPEN <check>: <reason>; NOTE lines that are not checks; and last "<recipe id>: n of m checks passed". Exit 0 only when every check passed and nothing is BLOCKED.
-Connection: parameter, then DW_BASE_URL / DW_API_TOKEN / DW_MCP_TOKEN, then launchSettings.json discovery (Dw.Api.psm1). Secrets the input names by reference come from DW_RECIPE_SECRETS (a JSON object); persona probes read DW_PERSONA_CREDENTIALS. No token, secret or response body is printed or written to the report. The TLS bypass applies to a loopback base URL or after -AllowSelfSignedCertificate.
+Connection: parameter, then DW_BASE_URL / DW_API_TOKEN / DW_MCP_TOKEN, then the demo folder (-SiteFolder, else the current directory): its .mcp.json (the /admin/mcp server's url and bearer) and the optional host facts file demo-host.json (url, keys file), one NOTE line per value naming the file and never the value; then launchSettings.json discovery (Dw.Api.psm1). A {build.*} token the input does not fill is read from the site when the site has one candidate (a NOTE names it), and stops the run with the candidates when it has several. Secrets the input names by reference come from DW_RECIPE_SECRETS (a JSON object); persona probes read DW_PERSONA_CREDENTIALS. No token, secret or response body is printed or written to the report. The TLS bypass applies to a loopback base URL or after -AllowSelfSignedCertificate.
 .PARAMETER Recipe
 Recipe id (users.accounts) or path to a recipe file.
 .PARAMETER InputPath
@@ -16,7 +16,11 @@ Target URL, otherwise DW_BASE_URL or launchSettings.json discovery.
 .PARAMETER ApiToken
 Management API credential, otherwise DW_API_TOKEN.
 .PARAMETER McpToken
-MCP credential, otherwise DW_MCP_TOKEN.
+MCP credential, otherwise DW_MCP_TOKEN, otherwise the site folder.
+.PARAMETER SiteFolder
+The demo folder that holds the site's .mcp.json and, optionally, demo-host.json. A value given as a parameter or in the environment wins. Default: the current directory.
+.PARAMETER BuildValues
+Values for {build.*} that the input leaves out, as Invoke-DwRecipeSet.ps1 resolved them once for the set; the input's own build section wins.
 .PARAMETER McpOnly
 Use the MCP tools only, as the in-product agent would.
 .PARAMETER Surfaces
@@ -57,6 +61,7 @@ param(
     [Parameter(Mandatory)][string]$InputPath,
     [switch]$Apply,
     [string]$BaseUrl, [string]$ApiToken, [string]$McpToken,
+    [string]$SiteFolder, [hashtable]$BuildValues,
     [switch]$McpOnly,
     [string[]]$Surfaces = @('mcp', 'admin-api', 'dwapi', 'sql'),
     [switch]$AllowSql, [string]$SqlServer, [string]$Database,
@@ -69,7 +74,7 @@ param(
     [switch]$AllowSelfSignedCertificate
 )
 $ErrorActionPreference = 'Stop'
-foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Match.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Prune.ps1', 'Recipe.Retire.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
+foreach ($file in @('Ledger.Core.ps1', 'Ledger.Sql.ps1', 'Ledger.Transport.ps1', 'Recipe.Core.ps1', 'Recipe.Site.ps1', 'Recipe.Match.ps1', 'Recipe.Transport.ps1', 'Recipe.Write.ps1', 'Recipe.Steps.ps1', 'Recipe.Scan.ps1', 'Recipe.Prune.ps1', 'Recipe.Retire.ps1', 'Recipe.Verify.ps1', 'Recipe.Debts.ps1')) { . (Join-Path $PSScriptRoot $file) }
 $assets = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../assets'))
 $recipeId = $Recipe
 $run = @{lines = [Collections.Generic.List[string]]::new(); checks = [Collections.Generic.List[object]]::new(); steps = [Collections.Generic.List[object]]::new(); planned = [Collections.Generic.List[string]]::new(); blocked = 0; changed = $false; results = @{}; deferred = @()}
@@ -103,15 +108,32 @@ try {
     $run.lines.Add("NOTE ${recipeId}: $(if ($applied) { 'apply' } else { 'verify-only, nothing is written' })")
     if ($McpOnly -and -not $doc.modes.mcpOnly.usable) { $run.lines.Add("NOTE ${recipeId}: declared not usable MCP-only: $($doc.modes.mcpOnly.reason)") }
 
+    # The connection: parameter, environment, then the demo folder's .mcp.json and demo-host.json (a NOTE per value, never the value).
+    $conn = Resolve-RecipeConnection -SiteFolder $SiteFolder -BaseUrl $BaseUrl -ApiToken $ApiToken -McpToken $McpToken
+    foreach ($note in $conn.notes) { $run.lines.Add($note) }
     Import-Module (Join-Path $PSScriptRoot '../../dw-data-access/scripts/Dw.Api.psm1') -Force -ErrorAction Stop
-    $state = Connect-Dw -BaseUrl $BaseUrl -ApiToken $ApiToken -McpToken $McpToken -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
+    try { $state = Connect-Dw -BaseUrl $conn.baseUrl -ApiToken $conn.apiToken -McpToken $conn.mcpToken -SolutionPath $SolutionPath -AllowSelfSignedCertificate:$AllowSelfSignedCertificate }
+    catch { throw (New-RecipeFault 'Runner input: no site URL. Set DW_BASE_URL (or -BaseUrl), or run from the folder that holds the site''s .mcp.json (or pass -SiteFolder).') }
     Assert-DwConnection | Out-Null
+    foreach ($gap in @(Get-RecipeConnectionGaps $conn)) { if (-not ($McpOnly -and $gap -like '*Management API*')) { $run.lines.Add($gap) } }
     $insecure = [bool]($AllowSelfSignedCertificate -or $state.BaseUrl -match '^https?://(localhost|127\.0\.0\.1)([:/]|$)')
     $script:RecipeTarget = @{baseUrl = $state.BaseUrl; insecure = $insecure}
     $script:LedgerTarget = $script:RecipeTarget
     $registry = Read-LedgerJson (Join-Path $assets 'handlers.json')
     $cap = Get-RecipeCapabilities -Surfaces $Surfaces -McpOnly:$McpOnly -McpToken $state.McpToken -ApiToken $state.ApiToken -AllowSql:$AllowSql -SqlServer $SqlServer -Database $Database
     foreach ($e in $cap.errors) { $run.lines.Add("NOTE ${recipeId}: $e") }
+    # {build.*} the input leaves out: what the set resolved, else the site's only candidate, else a stop that names the member.
+    $filled = @{}
+    foreach ($k in @($build.Keys)) { $filled[[string]$k] = $build[$k] }
+    if ($BuildValues) { foreach ($k in @($BuildValues.Keys)) { if (-not $filled.Contains([string]$k)) { $filled[[string]$k] = $BuildValues[$k] } } }
+    $needs = if ($Debts -eq 'Only') { @() } else { @(Get-RecipeBuildNeeds @($doc) $filled) }
+    if ($needs.Count) {
+        $reader = if ($cap.mcp) { { param($tool) Invoke-RecipeMcpCall $tool @{} $cap } } else { $null }
+        $resolved = Resolve-RecipeBuildDefaults $needs $reader
+        foreach ($k in $resolved.values.Keys) { $filled[$k] = $resolved.values[$k] }
+        foreach ($note in $resolved.notes) { $run.lines.Add($note) }
+    }
+    $build = $filled
     $run += @{recipeId = $recipeId; section = $section; build = $build; secrets = $secrets; cap = $cap; registry = $registry; apply = $applied; inputDir = (Split-Path -Parent (Resolve-Path -LiteralPath $InputPath).Path)
         baseUrl = $state.BaseUrl; apiToken = $state.ApiToken; mcpToken = $state.McpToken; solutionPath = $SolutionPath; ledgerBuild = $LedgerBuildFile; manifest = $Manifest; pollIntervalMs = 1000}
 

@@ -554,6 +554,29 @@ Describe 'Invoke-DwRecipe on content.pages' {
         Get-Writes | Should -BeNullOrEmpty
     }
 
+    It 'reads build.areaId from a site with one website when the input has no build section, and names it' {
+        New-Stub
+        $inner = $global:RecipeStub.mcp
+        $global:RecipeStub.mcp = {
+            param($Tool, $Arguments)
+            if ($Tool -eq 'get_areas') { return @{structuredContent = @{count = 2; data = @(@{id = 1; masterAreaId = 0}, @{id = 2; masterAreaId = 1})}} }
+            return (& $inner $Tool $Arguments)
+        }.GetNewClosure()
+        $global:RecipeStub.tools.get_areas = Get-Schema @()
+        $in = Join-Path $TestDrive ([guid]::NewGuid().ToString('n') + '.json')
+        @{schema = 1; 'content.pages' = $script:PagesSection} | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $in -Encoding utf8
+        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; SiteFolder = $TestDrive}
+        $r.lines | Should -Contain "NOTE build.areaId: 1, the site's only website (get_areas); add build.areaId to the input to choose another"
+        $r.lines | Should -Contain 'STEP pages WOULD-CREATE About us'
+        ($r.lines -match '^FAIL recipe:').Count | Should -Be 0
+        # A second website stops the run before any step, with the candidates and the member to add.
+        $global:RecipeStub.mcp = { param($Tool, $Arguments) if ($Tool -eq 'get_areas') { return @{structuredContent = @{count = 2; data = @(@{id = 1}, @{id = 9})}} }; return (& $inner $Tool $Arguments) }.GetNewClosure()
+        $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $in; SiteFolder = $TestDrive}
+        ($r.lines -match '^FAIL recipe: Runner input: the data file''s build section lacks build\.areaId \(the site has 2 candidates from get_areas: 1, 9\)').Count | Should -Be 1
+        ($r.lines -match '^STEP ').Count | Should -Be 0
+        $r.exit | Should -Be 1
+    }
+
     It 'creates everything, reads every write back, then a verify and a second apply change nothing (build path A)' {
         New-Stub
         $r = Invoke-Runner $script:Root @{Recipe = 'content.pages'; InputPath = $script:InputFile; Apply = $true}
