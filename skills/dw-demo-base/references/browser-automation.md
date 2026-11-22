@@ -142,6 +142,11 @@ After a Dynamicweb demo finishes seeding (PIM content, customer-center pages, pa
    - **Dismiss or pre-seed the cookie-consent modal before the first shot.** An isolated context has no
      consent cookie, so the modal covers every page of every run. It renders outside `<main>`, so it does
      not disturb measurements — it destroys only the evidence. See "Probe-harness discipline" below.
+     Pre-seeding is the cookie `Dynamicweb.CookieOptInLevel=2` on the browser context before the first
+     navigation. Dismissing is not a click and go: the accept button hides the modal at once, stores the
+     choice with a request and then **reloads the document**, so anything read between the click and the
+     reload is read from a page that is about to go away or has not rendered yet. Wait for the reloaded
+     document, not for the modal to disappear.
 6. **Run the visual QA pass** — [`visual-qa.md`](visual-qa.md) owns it: the programmatic detectors (horizontal overflow, broken/stretched images, whitespace bands), the interaction pass, the eyeball checklist, and the symptom→fix routing table. The entity-count check in step 5 proves the data landed; it says nothing about polish, and demo pages are held to "nothing left to fix", not "it renders".
 7. **Report findings to chat.** Surface mismatches (wrong count, missing element, NRE in template, visual-QA findings) so the next iteration of the seeding script can patch the root cause.
 

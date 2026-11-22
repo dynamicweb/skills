@@ -260,8 +260,9 @@ Default-type persona and recording the permission-filtered area list.
 
 ## 13. Plaintext password storage — `EncryptPassword=False` escape hatch
 
-**The passwordless-user trap.** There is **no MCP password tool** — `create_users` creates a login
-with **no usable password**, so a freshly-seeded buyer / CSR / admin persona **cannot sign in** until a
+**The passwordless-user trap.** `create_users` takes a `password` only when the user is created
+(`user-group-operations.md` §17d) and `update_users` has no password member, so a persona created
+without one, or one that already existed, **cannot sign in** until a
 password is set. Naively adding personas and then trying to sign in as them fails at the sign-in screen
 with no obvious cause, and every persona-dependent proof downstream (a gate check, a price-visibility
 check, a signed-in cart line) depends on this step.
@@ -301,10 +302,10 @@ When `EncryptPassword=False` (typical for development / on-prem solutions), the
 `AccessUser.AccessUserPassword` column stores plaintext, which is what makes the scripted escape
 hatch possible at all.
 
-The MCP `create_users` tool has no password parameter; the `UserSave` command **accepts a password
+The MCP `update_users` tool has no password member; the `UserSave` command **accepts a password
 member and drops it** — it answers success and the stored password stays empty, which is the specific
-shape that makes the trap hard to see. A backend user created through either has no usable password
-until one is set. The admin UI's Users → user → password field works and is manual; the dedicated
+shape that makes the trap hard to see. A backend user saved through either keeps the password it had,
+or none, until one is set. The admin UI's Users → user → password field works and is manual; the dedicated
 command in the out-of-product recipe is the automated route, and unlike the plaintext escape hatch
 below it works whatever the encryption mode. Check the setting before anyone relies on it —
 production solutions often flip these to `True`, and any plaintext seeded under `False` becomes a
