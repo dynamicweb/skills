@@ -77,6 +77,17 @@ delete the assortment and rebuild it without the grant; removing the single row 
 ([`dw-data-access/references/recipes-commerce.md`](../../dw-data-access/references/recipes-commerce.md)
 "Removing one assortment permission").
 
+**The grant's shapes, and what a missing grant looks like** [dw 10.30.6 · mcp 0.6.3-BETA].
+`assign_permissions_to_assortment {"permissions": [{"assortmentId": "<id>", "userId": <user or group id>}]}`
+answers `{"succeeded": 1, "failed": 0, "skipped": 0, "errors": []}`; `get_assortment_permissions
+{"assortmentId": "<id>"}` answers `{count, data: [{autoId, assortmentId, userId}]}`, one row per
+direct grant, a group's grant under its group id. The grant is served on the next request, with no
+build, flush or recycle. An assortment with `allowAnonymousUsers` serves its products to the
+anonymous visitor only: a signed-in buyer whose groups hold no grant on it is answered **404** for
+those products by the delivery API product read, while the same product is served anonymously, and
+a product in no assortment is served to both. Grant the account group (or a group it sits under)
+every assortment its buyers browse.
+
 **`check_assortment_product_access` answers `true` unconditionally, so it is not the gate.** Measured
 against a correctly built, active, permissioned assortment: `true` for an in-scope product, `true` for
 an out-of-scope product, `true` for a user holding no assortment at all, and `true` for anonymous —
