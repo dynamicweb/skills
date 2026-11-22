@@ -3,7 +3,7 @@
   "status": "reviewed",
   "before": "10.29.8",
   "after": "10.30.6",
-  "revision": 5,
+  "revision": 6,
   "rawScanDigest": "sha256:e1149cbc8a86e33fd29d0e17ce258a8f322247c1a1eb65ff36c6a3e1b4902cc7",
   "review": "delta-review.json",
   "added": [
@@ -335,7 +335,8 @@
     "Revision 2: search.facets.not-analyzed, search.index-queries.no-constant-macros and users.frontend-sign-in.persona-signs-in still have planned bindings only and stay UNVERIFIED; each binding's reason names the handler it needs (#244).",
     "Revision 3: search.facets.not-analyzed reads the local Files repository XML; a field whose Analyzed flag depends on a category or custom field's value type is an offender while DoNotAnalyzeDefaultFields is not true, because the value type is not in Files. users.frontend-sign-in.persona-signs-in needs persona credentials in DW_PERSONA_CREDENTIALS and is UNVERIFIED without them (#246).",
     "Revision 4: search.facets.not-analyzed judges the facets of the repository folders the build declares in build.repositories; a repository on the target that the build does not ship is reported (outOfScope) and not judged, and a build without repositories is UNVERIFIED. search.index-queries.no-constant-macros stays unscoped: a build can bind a query in a repository it does not ship (#248).",
-    "Revision 5: pim.unit-rules-per-language.rendered reads only the measures the build declares in build.renderedMeasures; a build without them is UNVERIFIED. The feed channel reads a feed whose provider renders JSON; another feed format is UNVERIFIED (#217)."
+    "Revision 5: pim.unit-rules-per-language.rendered reads only the measures the build declares in build.renderedMeasures; a build without them is UNVERIFIED. The feed channel reads a feed whose provider renders JSON; another feed format is UNVERIFIED (#217).",
+    "Revision 6: distribution.sample-data.buyer-persona reads the buyer's user name from build.buyerUserName and uses TruvioBuyer when the build names none; a name with a character outside letters, digits and . _ @ + - is refused (#268)."
   ],
   "corrections": [],
   "mapped": [],
@@ -403,6 +404,12 @@
       "change": "binding-promoted",
       "source": "https://github.com/dynamicweb/skills/issues/217",
       "note": "Revision 5: implemented dwapi-rendered-value binding. Per measure declared in build.renderedMeasures it makes one anonymous GET on ecommerce/products/{productId} or feeds/GetFeedOutput with the ruled LanguageId and judges the printed unit and value; the assertion becomes offenders with minimumSubjects 1. Measured read-only on a 10.30.6 consumer build with 12 unit rules for a second language: the product read in that language printed the converted unit (55.9 cm), the feed asked for the same language served the source-language product and printed the source unit (22 in), so the feed measure is an offender. Green and red controls in Handlers.Tests.ps1."
+    },
+    {
+      "checkId": "distribution.sample-data.buyer-persona",
+      "change": "check-correction",
+      "source": "https://github.com/dynamicweb/skills/issues/268",
+      "note": "Revision 6: both bindings take the buyer's user name from the build (buyerUserName, token {buyerUserName}) in place of the literal TruvioBuyer, which stays the value when the build names none. A demo built on a rewritten sample-data copy signs its buyer in under the customer's user name; the check then counted 0 and failed although the persona was one sign-in row. The assertion (exactly one sign-in row) is unchanged. Green and red controls in Observations.Tests.ps1 and Ledger.Tests.ps1."
     }
   ]
 }

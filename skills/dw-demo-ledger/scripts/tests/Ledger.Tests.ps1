@@ -96,6 +96,10 @@ Describe 'Read safety and lock integrity' {
     }
     It 'rejects token injection and path traversal' {
         {Expand-PimSql "SELECT N'{lang}'" @{defaultLanguage="x';--"}} | Should -Throw
+        {Expand-PimSql "SELECT N'{buyerUserName}'" @{buyerUserName="x';--"}} | Should -Throw
+        {Expand-PimSql "SELECT N'{buyerUserName}'" @{buyerUserName='a b'}} | Should -Throw
+        Expand-PimSql "SELECT N'{buyerUserName}'" @{buyerUserName='buyer@customer.example'} | Should -Be "SELECT N'buyer@customer.example'"
+        Expand-PimSql "SELECT N'{buyerUserName}'" @{} | Should -Be "SELECT N'TruvioBuyer'"
         {Resolve-LedgerPath $TestDrive '../escape.json'} | Should -Throw
     }
     It 'changes snapshot identity for changed files and added probes' {

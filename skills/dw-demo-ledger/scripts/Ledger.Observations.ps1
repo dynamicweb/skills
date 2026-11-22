@@ -15,7 +15,8 @@ function Expand-LedgerArguments {
     }
     if($Value -is [array]) {return ,@(foreach($item in $Value){Expand-LedgerArguments $item $Build})}
     if($Value -isnot [string]) {return $Value}
-    $tokens=@{lang=$Build.defaultLanguage;pimShop=$Build.pimShop;areaId=$Build.areaId}
+    # The buyer persona's user name: the build's, else the one the sample data ships.
+    $tokens=@{lang=$Build.defaultLanguage;pimShop=$Build.pimShop;areaId=$Build.areaId;buyerUserName=$(if("$($Build.buyerUserName)"){$Build.buyerUserName}else{'TruvioBuyer'})}
     foreach($match in [regex]::Matches($Value,'\{([^{}]+)\}')) {
         $key=$match.Groups[1].Value
         if(-not $tokens.ContainsKey($key) -or $null -eq $tokens[$key] -or "$($tokens[$key])" -eq '') {

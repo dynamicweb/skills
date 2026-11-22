@@ -3,9 +3,9 @@
   "id": "distribution.sample-data.buyer-persona",
   "functionId": "distribution.sample-data",
   "intent": {
-    "proves": "The buyer persona TruvioBuyer exists as exactly one sign-in (login) row.",
+    "proves": "The buyer persona exists as exactly one sign-in (login) row under its user name: the build's buyerUserName, or TruvioBuyer when the build names none.",
     "level": "applied",
-    "scope": "AccessUser rows with the user name TruvioBuyer that are the login of that user name (AccessUserIsLogin); the sample data also ships a second, non-login row under the name"
+    "scope": "AccessUser rows with the buyer's user name that are the login of that user name (AccessUserIsLogin); the sample data also ships a second, non-login row under the name"
   },
   "assertion": {
     "kind": "scalar",
@@ -21,7 +21,7 @@
       "operation": "get_users_by_usernames",
       "arguments": {
         "userNames": [
-          "TruvioBuyer"
+          "{buyerUserName}"
         ]
       }
     },
@@ -31,7 +31,7 @@
       "status": "implemented",
       "handler": "sql-scalar",
       "localOnly": true,
-      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserUserName = N'TruvioBuyer' AND AccessUserIsLogin = 1"
+      "query": "SELECT COUNT(*) FROM AccessUser WHERE AccessUserUserName = N'{buyerUserName}' AND AccessUserIsLogin = 1"
     }
   ],
   "sources": [

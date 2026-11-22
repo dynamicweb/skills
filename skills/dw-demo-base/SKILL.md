@@ -77,10 +77,14 @@ Loading reference content into the project DB is **NOT** part of this skill's ca
 
 The Serializer install steps live in base so any sister skill can pull them; the act of deserializing is Swift- or headless-specific.
 
-**Branding that content is a separate choice, and it has a default.** Once an edition's demo
-content is on the host, a demo is branded one of three ways: author a demo-local brand layer in
-YAML and deserialize it (**the default**), deliver the edition as shipped and rebrand it through
-the tools, or model everything over the tools from a blank host. The three paths, their ordered
+**Branding that content is a separate choice, and it has a default.** A demo is branded one of
+three ways: deliver a demo-local layer generated from a **customer data file** in place of the
+shipped sample data (**the default**), deliver the edition as shipped and rebrand it through
+the tools, or model everything over the tools from a blank host. **The customer data file is the
+first step of a build on the default path**: write it from the customer's catalogue, prices,
+accounts and order history before the site is requested, run the Distribution's generator
+(`tools/sample-data/rewrite-sample-data.py`) over it, and have the site built with that copy, so
+the first delivery already carries the customer's data. The three paths, their ordered
 steps with a check each, the measured cost of each, and the conditions under which the tool path
 is the right one are owned by [references/branded-demo-paths.md](references/branded-demo-paths.md).
 Every branding instruction in the sister skills routes there before it routes to a write surface.
@@ -118,7 +122,7 @@ The former standalone demo-theme and feature-pack repos are **archived** — the
 | If you need to... | Read this reference |
 |---|---|
 | How a demo build is **driven** — the native `/demo:*` commands, the standalone harness, the strictness gradient, acceptance criteria | references/orchestrator.md |
-| **Brand a demo to a customer**: the three paths (YAML brand layer first, deserialize-then-tools, tools only), the measured cost of each, ordered steps with a check per step, and the traps. Read it BEFORE the first brand write | **references/branded-demo-paths.md** |
+| **Brand a demo to a customer**: the three paths (customer data file and YAML layer first, deserialize-then-tools, tools only), the generator that writes the layer from the customer data file, the measured cost of each path, ordered steps with a check per step, and the traps. Read it BEFORE the site is requested | **references/branded-demo-paths.md** |
 | Verify a fresh machine is build-ready (incl. the MSDTC check behind AreaCopy `TransactionException`s) | references/setup-checks.md |
 | **Audit a restored or copied database for orphaned shop/group relation rows** before trusting any group-tree inventory | references/setup-checks.md §2b |
 | **Build on, or publish onto, a hosted/cloud install** (URL + Admin API key only — no scaffold, no SQL; the session-start probe, the Management API recipe pack, lying-success verification, the flush-then-restart ladder, inherited-clone remediation; and for a publish: pre-flight, transport map, id collisions, index rebuild) | **[`dw-demo-hosted`](../dw-demo-hosted/SKILL.md)** |
