@@ -36,6 +36,10 @@ Describe 'Collection scope and typed arguments' {
         {Expand-LedgerArguments @{areaId='{areaId}'} @{}} | Should -Throw
         {Expand-LedgerArguments @{x='{unknown}'} @{}} | Should -Throw
     }
+    It 'fills the buyer user name from the build, and the sample data name when the build names none' {
+        (Expand-LedgerArguments @{userNames=@('{buyerUserName}')} @{buyerUserName='buyer@customer.example'}).userNames[0] | Should -Be 'buyer@customer.example'
+        (Expand-LedgerArguments @{userNames=@('{buyerUserName}')} @{}).userNames[0] | Should -Be 'TruvioBuyer'
+    }
 }
 Describe 'Local Files scope and XML' {
     BeforeEach {

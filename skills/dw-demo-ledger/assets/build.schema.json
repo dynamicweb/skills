@@ -59,6 +59,10 @@
       "type": "string",
       "minLength": 1
     },
+    "buyerUserName": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._@+-]+$"
+    },
     "families": {
       "type": "array",
       "items": {

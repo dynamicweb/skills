@@ -1,8 +1,9 @@
 # branded-demo-paths.md
 
 > Three ways to reach a branded Dynamicweb 10 demo, what each one costs, and which one to take.
-> **Default: path A, YAML first.** Path B is the explicit alternative and stays valid; path C is
-> the floor. This file is the routing point every branding instruction in the corpus defers to.
+> **Default: path A, YAML first, and its first step is the customer data file.** Path B is the
+> explicit alternative and stays valid; path C is the floor. This file is the routing point every
+> branding instruction in the corpus defers to.
 
 ## Contents
 
@@ -64,6 +65,46 @@ The layer is read-only to a demo. Branding never edits Distribution YAML: guarde
 [`../SKILL.md`](../SKILL.md) is the enforcement point, and the brand layer authored below is
 demo-local, under the demo root, never under `distribution/layers/`.
 
+### Start with the customer data file
+
+**Before the site exists, write the customer data file and generate the layer from it.** The
+Distribution ships a generator, `tools/sample-data/rewrite-sample-data.py`, that writes the
+demo-local layer of step 3 from one JSON file. The file's shape is
+`tools/sample-data/customer-data.schema.json`, a worked example is
+`tools/sample-data/testdata/vellmark/`, and `layers/sample-data/REWRITE.md` is the guide to what
+the generator writes and which keys stay stable.
+
+| Section of the file | What the copy carries |
+|---|---|
+| `catalogue` | groups, data models, products with their numbers, copy, list price, stock, images, documents, specification values and related products |
+| `prices` | customer-group prices, quantity tiers and contract prices |
+| `users.accounts` | the accounts, the buyer, the customer-service user and the account admin, and the account the buyer may also act for |
+| `history` | orders, quotes, carts and favourite lists of the buyer |
+| `brandCopy` | the storefront copy the layer carries: Home, About, header, footer, product page |
+
+```
+python tools/sample-data/rewrite-sample-data.py --input <customer data file>     --out <demo-root>/layers/<customer>-data --report <report.json>     --acts-for <customer number of the buyer's second account> [--logins input]
+```
+
+`--logins input` signs the three personas in under the customer's own user names; without it
+they keep the user names the sample data ships. `--dry-run` reports and writes nothing. The
+generator refuses, with what to fix, an input that would break a row the base contract
+guarantees, and its report lists the layer probes whose subjects the copy no longer carries
+(step 2's decision, made for you and written down).
+
+**Deliver the copy in place of `sample-data`, as the first delivery of a fresh site.** A merge
+deserialize never deletes and never renames, so a host that already received the shipped rows
+keeps them beside the rewritten ones. Where the site is provisioned by a command that takes a
+data layer, pass the copy to it and the site comes up on the customer's data; otherwise compose
+the demo edition with the copy where `sample-data` stood (steps 5 and 6).
+*Check:* the storefront lists the customer's products and none of the shipped ones, and each
+persona signs in.
+
+What the file does not carry today, and so stays a later step: variants, page content beyond the
+copy slots above, the colours (step 4) and the five master fields of step 7. Steps 1 and 2 still
+apply before the file is written; step 3 is then the generator's output plus whatever the file
+has no section for.
+
 ### Steps
 
 1. **Resolve the edition and read what it already carries.** Take the edition that sets
@@ -77,8 +118,9 @@ demo-local, under the demo root, never under `distribution/layers/`.
    *Check:* list the guaranteed subjects and mark, per subject, whether the brand renames it. A
    renamed subject turns its probe red **by construction**; that is a decision to record in the
    plan doc, not a defect to chase later.
-3. **Author the demo-local brand layer**, kind `sample-data`, under the demo root. Three
-   document families, authorable in parallel:
+3. **Author the demo-local brand layer**, kind `sample-data`, under the demo root. The generator
+   above writes it from the customer data file; author by hand only what the file has no section
+   for. Three document families, authorable in parallel:
    - **Partial `SqlTable` rows with `ownership: replace`** for the renames: names, SKUs, order
      numbers, group titles, category-field values. Partial rows carry only the columns the brand
      changes, so every key the contract pins stays put.

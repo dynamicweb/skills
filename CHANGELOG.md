@@ -3,6 +3,12 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.11.0]
+
+- `dw-demo-base`: the customer data file is the first step of a build on the default path. `branded-demo-paths.md` path A names the Distribution's generator (`tools/sample-data/rewrite-sample-data.py`), the file's shape and worked example, what each section of the file puts in the demo-local layer, the command, and that the copy is delivered in place of `sample-data` as the first delivery of a fresh site. `SKILL.md` says the same where it introduces the three paths. Until now path A described authoring that layer by hand and no skill named the generator.
+- `dw-demo-ledger` snapshot **10.30.6 revision 6** (#268). The digest changes, so a build locked on revision 5 needs a re-lock with `Update-DwLedgerLock.ps1`.
+- `distribution.sample-data.buyer-persona` takes the buyer's user name from the build: `buyerUserName` in `build.schema.json`, the token `{buyerUserName}` in both bindings. A build that names none is measured with `TruvioBuyer`, as before. A demo built on a rewritten sample-data copy signs its buyer in under the customer's user name; the check counted the literal `TruvioBuyer`, found 0 and failed. The assertion (exactly one sign-in row) is unchanged. A name with a character outside letters, digits and `. _ @ + -` is refused.
+
 ## [6.10.1]
 
 - Traps from two demo builds that rebranded a delivered edition through the tools, folded into the references a build session reads first:

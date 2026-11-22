@@ -29,6 +29,8 @@ $script:PimSinglePresentation = @(1, 2)
 $script:PimMultiPresentation  = @(3, 4, 5)
 $script:PimTokenPattern = '^[A-Za-z0-9_-]+$'
 $script:PimIdLikePattern = '^[A-Za-z0-9_-]+%?$'
+# A sign-in name may be an e-mail address. It lands inside a quoted literal, so no quote, space or bracket passes.
+$script:PimUserNamePattern = '^[A-Za-z0-9._@+-]+$'
 
 
 function Test-PimOp {
@@ -70,6 +72,12 @@ function Expand-PimSql {
             Assert-PimTokenScope -Token $p[0] -Value $p[1] -Server $Server -Database $Database
             $Sql = $Sql.Replace($p[0], $p[1])
         }
+    }
+    if ($Sql.Contains('{buyerUserName}')) {
+        # The buyer persona's user name: the build's, else the one the sample data ships.
+        $name = if ("$($Build.buyerUserName)") { "$($Build.buyerUserName)" } else { 'TruvioBuyer' }
+        if ($name -notmatch $script:PimUserNamePattern) { throw 'token {buyerUserName} has no plain user-name value in the build file' }
+        $Sql = $Sql.Replace('{buyerUserName}', $name)
     }
     if ($Sql.Contains('{inScope}')) {
         $clause = ''
