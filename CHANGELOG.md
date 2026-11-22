@@ -3,6 +3,10 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.10.0]
+
+- `dw-demo-ledger`: a snapshot covers its own release and the later patch releases of its minor line. The 10.30.6 snapshot is now the baseline for every later 10.30 patch, so a platform patch no longer needs a new snapshot and a re-lock. Another minor line, an earlier patch and a version with a prerelease label still block normal execution, and diagnostic mode still cannot produce PASS. The report is unchanged: `compatibility.baseline` names the snapshot's release, `compatibility.observed` the target's, and `compatibility.matches` is true when the snapshot covers it. Measured on DW 10.30.8 with the 10.30.6 snapshot: 188 locked checks across three editions gave the same result as on 10.30.6.
+
 ## [6.9.2]
 
 - Reference corrections and measured shapes from demo builds on fresh DW 10.30.6 sites with MCP 0.6.3-BETA (the knowledge part of #264, without its new mechanisms):

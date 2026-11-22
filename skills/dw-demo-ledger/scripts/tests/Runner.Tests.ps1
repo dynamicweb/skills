@@ -116,12 +116,38 @@ Describe 'The certified release is the one observed from start to end' {
         $run.report.compatibility.matches | Should -BeFalse
         $run.report.errors | Should -Contain 'Target version changed or became unavailable during observation; the initial baseline cannot certify this report.'
     }
-    It 'RED CONTROL: another release blocks every check' {
-        Start-Site @{Versions=@('9.9.9')}
+    It 'passes on a later patch release of the snapshot''s minor line' {
+        Start-Site @{Versions=@('1.0.4')}
+        $run=Invoke-Run
+        $run.exit | Should -Be 0 -Because $run.text
+        $run.report.result | Should -Be PASS
+        $run.report.compatibility.baseline | Should -Be '1.0.0'
+        $run.report.compatibility.observed | Should -Be '1.0.4'
+        $run.report.compatibility.matches | Should -BeTrue
+        $run.report.compatibility.diagnostic | Should -BeFalse
+    }
+    It 'RED CONTROL: <version> blocks every check' -TestCases @(
+        @{version='9.9.9'},@{version='1.1.0'},@{version='2.0.0'},@{version='1.0.4-rc1'}
+    ) {
+        param($version)
+        Start-Site @{Versions=@($version)}
         $run=Invoke-Run
         $run.exit | Should -Be 1
         $run.report.counts.UNSUPPORTED | Should -Be 7
-        (Get-Row $run 'fx.files.present').reason | Should -Match 'the target reports another release'
+        $run.report.compatibility.matches | Should -BeFalse
+        (Get-Row $run 'fx.files.present').reason | Should -Match "the target reports $([regex]::Escape($version)), a release the 1\.0\.0 snapshot does not cover"
+    }
+    It 'covers the snapshot''s release and its later patches, nothing else (<baseline> on <observed>: <covered>)' -TestCases @(
+        @{baseline='10.30.6';observed='10.30.6';covered=$true},@{baseline='10.30.6';observed='10.30.8';covered=$true}
+        @{baseline='10.30.6';observed='10.30.17';covered=$true},@{baseline='10.30.6';observed='10.30.5';covered=$false}
+        @{baseline='10.30.6';observed='10.31.0';covered=$false},@{baseline='10.30.6';observed='10.29.9';covered=$false}
+        @{baseline='10.30.6';observed='11.30.6';covered=$false},@{baseline='10.30.6';observed='10.30.8-rc1';covered=$false}
+        @{baseline='10.30.6';observed='10.30.6.1';covered=$false},@{baseline='10.30.6-rc1';observed='10.30.6-rc1';covered=$true}
+        @{baseline='10.30.6-rc1';observed='10.30.8';covered=$false},@{baseline='10.30.6';observed='';covered=$false}
+    ) {
+        param($baseline,$observed,$covered)
+        . (Join-Path $PSScriptRoot '../Ledger.Core.ps1')
+        Test-LedgerReleaseCovered $baseline $observed | Should -Be $covered
     }
     It 'passes after one failed descriptor read' {
         Start-Site @{FailDescriptor=1}
