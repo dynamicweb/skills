@@ -232,6 +232,66 @@ of each other, with B's simpler surface as the tie-breaker.
   the one sorting first), and when only one method is valid for the country it preselects nothing at
   all, with the hidden empty radio checked. Set the country's default shipping method rather than
   narrowing the method list or relying on sort.
+- **A product patch over MCP writes the cached product back.** `patch_products_safe` saves the whole
+  master from the application's product cache, so a SQL change to products made earlier in the same
+  application lifetime returns to its old names and prices on the next patch. After any SQL write to
+  products, clear that cache before the next MCP product write. A recycle is what the builds that met
+  this used; the cache table in
+  [`dw-data-access`](../../dw-data-access/references/cache-invalidation.md) names the lighter routes.
+- **An existing login gets its password from the command, not from a tool.** `create_users` takes a
+  `password` only when the user is created and `update_users` has no password member. Set the
+  password of an existing persona with `UserSetPassword` (path A step 7). A hash copied from another
+  row can miss without an error, so sign each persona in on the storefront afterwards.
+- **Order views are cached.** After order history is rewritten by SQL, the customer centre keeps
+  showing the old lines and totals. Recycle before judging the result, and again after a reset
+  script run before a showing.
+- **The edition hides prices and the cart from visitors.** The Swift master item ships
+  `AnonymousUsers` set to `cart-price`: a signed-out visitor sees products with no price and no
+  cart, while stock still shows. For a shop that sells to guests, clear the field with
+  `set_item_field_values`.
+- **The edition's payment and shipping methods carry no customer-group scope.** Every buyer is
+  offered every method. Scope them with `PaymentUserGroups` and `ShippingUserGroups` as a plain
+  comma list of group ids; a bracketed list hides the method from everyone
+  ([`dw-commerce-orders`](../../dw-commerce-orders/references/checkout-configuration.md)).
+- **Sample rows hide a rewritten catalogue.** The sample dealer assortment and the sample
+  bill-of-materials row keep rewritten products out of the product list. Retire the assortment (its
+  items, group relations and permissions) and the sample `EcomProductItems` row, set that product's
+  `ProductType` back to 0, then recycle and rebuild the product indexes.
+- **Top groups carry no group-relation row.** The shop relation (`EcomShopGroupRelation`) is what
+  makes a group a top group. A row in `EcomGroupRelations` with an empty parent empties the
+  storefront navigation, so write relation rows for child groups only.
+- **Classic discounts do nothing while the new discount experience is on.** The edition sets
+  `Features/Commerce/Newdiscountexperience` to True, so an `EcomDiscount` row has no effect in the
+  cart. Build discounts with `create_adjustment_discounts`, `save_conditions_to_discounts` and
+  `save_rewards_to_discounts`
+  ([`dw-commerce-orders`](../../dw-commerce-orders/references/promotions-engines.md)).
+- **The store map and the address lookup need a Google Maps key.** `Swift-v2_LocationsMap` and
+  `EnableFindLocation` do not work until `Google_APIKey` is set on the Swift master item. Set the
+  key or leave both off.
+
+Four traps were met on one build each and are stated as that build found them:
+
+- **The edition's facets read the sample category fields.** After the catalogue is rewritten, the
+  storefront facets render empty or stale. Point the facet index fields at the new fields and keep
+  their system names and query parameters.
+- **A SQL insert into `EcomPrices` must match the database's columns.** `PriceIsInformative` and
+  `PriceLanguageId` are not on every database. Read `sys.columns` for the table and leave out the
+  columns it lacks.
+- **A contract account can see two quantity ladders at once.** With list tiers and account tiers on
+  one product, the price table on the product page shows both, interleaved. Show one row per
+  quantity at the lowest price the buyer gets, in the price table template.
+- **A second language starts with an empty product list.** The edition's storefront index
+  definitions set `SkipProductTranslations` to True, and the MCP tools refuse a product name on a
+  second language. Turn product translations on in the index definitions, add the products with
+  `add_products_to_language`, write names and short descriptions by SQL, then rebuild the product
+  indexes.
+
+Four more are owned by a foundational skill and bite a tool build the same way: every variant group
+goes on a product before any combination ([`dw-pim-modelling`](../../dw-pim-modelling/SKILL.md));
+`update_users` saves the cached user again, so SQL on that user goes after it, and a new item type
+needs a restart before a paragraph of that type saves
+([`dw-data-access`](../../dw-data-access/references/cache-invalidation.md)); a unit group is a SQL
+insert plus a recycle ([`dw-demo-pim`](../../dw-demo-pim/references/access-surfaces.md)).
 
 **Assets.**
 

@@ -3,6 +3,13 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.10.1]
+
+- Traps from two demo builds that rebranded a delivered edition through the tools, folded into the references a build session reads first:
+  - `dw-demo-base` `branded-demo-paths.md`, "Traps that cost time on either path": a product patch over MCP writes the cached product back over an earlier SQL change; an existing login gets its password from `UserSetPassword`; order views are cached; the edition hides prices and the cart from visitors, ships its payment and shipping methods unscoped, and its sample assortment and bill-of-materials row hide a rewritten catalogue; top groups carry no group-relation row; classic discounts do nothing under the new discount experience; the store map needs a Google Maps key; four more met on one build each; and pointers to the four a foundational skill already owns.
+  - `dw-demo-base` `browser-automation.md`: the consent cookie by name, and that the accept button reloads the document, so a probe waits for the reloaded document and not for the modal.
+  - `dw-users-permissions` `grant-mechanics.md` §13 no longer says `create_users` has no password; it takes one at creation (§17d), `update_users` has none.
+
 ## [6.10.0]
 
 - `dw-demo-ledger`: a snapshot covers its own release and the later patch releases of its minor line. The 10.30.6 snapshot is now the baseline for every later 10.30 patch, so a platform patch no longer needs a new snapshot and a re-lock. Another minor line, an earlier patch and a version with a prerelease label still block normal execution, and diagnostic mode still cannot produce PASS. The report is unchanged: `compatibility.baseline` names the snapshot's release, `compatibility.observed` the target's, and `compatibility.matches` is true when the snapshot covers it. Measured on DW 10.30.8 with the 10.30.6 snapshot: 188 locked checks across three editions gave the same result as on 10.30.6.
