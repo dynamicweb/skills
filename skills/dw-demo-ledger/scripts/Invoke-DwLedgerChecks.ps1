@@ -90,12 +90,13 @@ try {
     $cap=Get-LedgerCapabilities -BaseUrl $BaseUrl -ApiToken $ApiToken -McpToken $McpToken -SqlServer $SqlServer -FilesPath $FilesPath -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
     Add-LedgerRequirementFacts -Capabilities $cap -Requirements @($build.functions|ForEach-Object {$functions[$_].requires}) -FilesPath $FilesPath
     $observed=if($cap.dwVersion){($cap.dwVersion -split '\+')[0]}else{$null}
-    $matches=$observed -eq $manifestData.dwVersion
+    # The snapshot's own release and the later patch releases of its minor line (Test-LedgerReleaseCovered).
+    $matches=Test-LedgerReleaseCovered $manifestData.dwVersion $observed
     # An unread descriptor is not another release: the row says which of the two stopped it.
     $blocked=if($matches -or $DiagnosticVersionMismatch){$null}
-        elseif(-not $BaseUrl){'No target URL was given, so the exact baseline is not established; use diagnostic mode only for investigation.'}
-        elseif(-not $observed){'The target version could not be read (admin descriptor unavailable after retries), so the exact baseline is not established. This is not a version mismatch.'}
-        else{'Exact baseline not established: the target reports another release; use diagnostic mode only for investigation.'}
+        elseif(-not $BaseUrl){'No target URL was given, so the baseline is not established; use diagnostic mode only for investigation.'}
+        elseif(-not $observed){'The target version could not be read (admin descriptor unavailable after retries), so the baseline is not established. This is not a version mismatch.'}
+        else{"Baseline not established: the target reports $observed, a release the $($manifestData.dwVersion) snapshot does not cover (another minor line, or an earlier patch); use diagnostic mode only for investigation."}
     $rows=Get-LedgerRows @{build=$build;functions=$functions;checks=$checks;capabilities=$cap;profile=$profile;surfaces=$Surfaces;sqlServer=$SqlServer;database=$Database;filesPath=$FilesPath;root=$root;assets=$assets;blocked=$blocked}
     $endingVersion=Get-LedgerObservedVersion -BaseUrl $BaseUrl -AllowSelfSignedCertificate:$AllowSelfSignedCertificate
     $stableVersion=Test-LedgerStableVersion $cap.dwVersion $endingVersion

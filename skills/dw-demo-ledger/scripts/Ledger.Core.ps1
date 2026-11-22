@@ -148,6 +148,19 @@ function Compare-LedgerVersion {
     if ($order -eq 0) { $order = $parsed[0].fourth.CompareTo($parsed[1].fourth) }
     return [Math]::Sign($order)
 }
+function Test-LedgerReleaseCovered {
+    # A snapshot covers its own release and the later patch releases of its minor line: 10.30.6 covers
+    # 10.30.6, 10.30.7, 10.30.8, and neither 10.30.5 nor 10.31.0. A version that is not three plain
+    # numbers (a prerelease label, a fourth number) is covered only by the snapshot of exactly that version.
+    param([string]$Baseline, [string]$Observed)
+    if (-not $Baseline -or -not $Observed) { return $false }
+    if ($Baseline -ceq $Observed) { return $true }
+    $plain = '^(\d+)\.(\d+)\.(\d+)$'
+    if ($Baseline -notmatch $plain) { return $false }
+    $base = @([int]$Matches[1], [int]$Matches[2], [int]$Matches[3])
+    if ($Observed -notmatch $plain) { return $false }
+    return ([int]$Matches[1] -eq $base[0]) -and ([int]$Matches[2] -eq $base[1]) -and ([int]$Matches[3] -gt $base[2])
+}
 function Resolve-LedgerFact {
     # The discovered fact a requirement names. A lookup only: nothing is inferred from the requirement's wording.
     param($Requirement, $Facts)

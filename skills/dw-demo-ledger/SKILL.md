@@ -18,13 +18,13 @@ Use discovered Management API queries with equivalent observations. File and del
 
 ## Workflow
 
-1. Read [the contract](references/contract.md). Select an exact-release snapshot and record its commit, path, digest and explicit check set in the build lock. `lock.manifest` is the path from the skills repository root (`skills/dw-demo-ledger/assets/releases/<release>/manifest.json`), and `lock.checkIds` takes check ids from the probes that `functions/<area>.json` lists; the contract shows an example lock.
+1. Read [the contract](references/contract.md). Select the snapshot that covers the target's release and record its commit, path, digest and explicit check set in the build lock. A snapshot covers its own release and the later patch releases of its minor line: the 10.30.6 snapshot covers 10.30.6 and every later 10.30 patch, and neither 10.30.5 nor 10.31.0. `lock.manifest` is the path from the skills repository root (`skills/dw-demo-ledger/assets/releases/<release>/manifest.json`), and `lock.checkIds` takes check ids from the probes that `functions/<area>.json` lists; the contract shows an example lock.
 2. Declare functions and scope before building. Keep breadth expectations in a named profile, separate from platform facts.
 3. Discover target surfaces and grants. Prefer MCP, then Management API, using only implemented bindings with the required observation semantics.
 4. Run the read-only checks. A failed valid observation stays FAIL; another surface must not be used to shop for a passing answer.
 5. Retain the report with the build evidence. Unknown compatibility and missing bindings prevent a readiness claim.
 
-The initial snapshot is a candidate until measured on its exact baseline. A diagnostic run on another release is useful evidence about that host, not proof of baseline compatibility. Functions without executable coverage stay visible.
+The initial snapshot is a candidate until measured on its own release. A diagnostic run on a release the snapshot does not cover is useful evidence about that host, not proof of baseline compatibility. Functions without executable coverage stay visible.
 
 ## Assets
 
