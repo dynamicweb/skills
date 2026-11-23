@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.12.2]
+
+- `dw-setup-install` and `dw-demo-base`: the first Forms for Editors submit on a new database fails with `Invalid column name 'FormSubmitReferer'`, because Dynamicweb.Forms defines no such column and since 10.13.3 adds it only when it reads a submit row. `install-swift2.ps1` and `Restore-DwEditionDatabase.ps1` now add the column when it is missing (idempotent), `Test-DwDemoBaseBuild.ps1` fails without it, and `dw-setup-install` SKILL.md has the one statement for any other database ("The form submit column").
+- `dw-demo-swift`, `storefront-browser-checks.md`, traps: a scripted Forms for Editors submit without a `Referer` header bans the sender's address for a month (`Files/System/_BannedIps.txt`, 403 on every request), with how to lift it and how to submit as a browser does. Cleaning up: delete a form's submissions before the form, and purge a deleted page from the trash.
+
 ## [6.12.1]
 
 - `dw-demo-base`, `branded-demo-paths.md`, "Start with the customer data file", after the generator stopped letting sample claims through: the copy slots the file has no member for carry plain, true defaults (figures counted from the file) and the report's `residualSampleClaims` must be empty; overwrite the slots the demo shows with the customer's own words. Each top group's facet field needs its own label, because the copy names its facets after those labels. The line that asked for every product in `prices.listPrices` is gone: the generator prices a product from its `listPrice` either way and no longer warns.

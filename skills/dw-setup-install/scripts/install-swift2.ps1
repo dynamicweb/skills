@@ -404,6 +404,25 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-OK "Database '$TargetDatabase' imported"
 
+# Forms for Editors cannot store a submit without FormSubmit.FormSubmitReferer. Dynamicweb.Forms defines no
+# such column and since 10.13.3 adds it only when it reads a row, so a database that never listed a submit
+# lacks it and the first submit fails. Idempotent: a column that is there is left alone.
+try {
+    $formGuard = [System.Data.SqlClient.SqlConnection]::new($connectionString)
+    try {
+        $formGuard.Open()
+        $formGuardCommand = $formGuard.CreateCommand()
+        $formGuardCommand.CommandText = "IF OBJECT_ID(N'dbo.FormSubmit', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.FormSubmit', N'FormSubmitReferer') IS NULL BEGIN ALTER TABLE [dbo].[FormSubmit] ADD [FormSubmitReferer] nvarchar(1000) NULL; SELECT 1; END ELSE SELECT 0;"
+        $formColumnAdded = [int]$formGuardCommand.ExecuteScalar()
+    }
+    finally { $formGuard.Dispose() }
+    if ($formColumnAdded -eq 1) { Write-OK "FormSubmit.FormSubmitReferer added: form submits can be stored" }
+    else { Write-OK "FormSubmit.FormSubmitReferer present" }
+}
+catch {
+    Write-Warn "FormSubmit.FormSubmitReferer could not be checked: $($_.Exception.Message). Before the first form submit run: ALTER TABLE FormSubmit ADD FormSubmitReferer nvarchar(1000) NULL"
+}
+
 Write-Step "Extracting Swift 2 Files folder to: $FilesPath"
 
 if (-not (Test-Path $FilesPath)) {

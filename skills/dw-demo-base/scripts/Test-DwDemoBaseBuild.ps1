@@ -39,6 +39,9 @@ try {
     if($pim[0].products -lt 1 -or $pim[0].models -lt 4 -or $pim[0].completionRules -lt 1 -or $pim[0].workspaces -ne 1){throw 'The edition PIM setup is incomplete.'}
     $personas=Get-DwBuildRows $conn 'SELECT AccessUserID,AccessUserUserName,AccessUserName FROM AccessUser WHERE AccessUserID IN (100101,100102,100103)'
     if($personas.Count -ne 3){throw 'Three persona rows are required.'}
+    # No new database carries FormSubmit.FormSubmitReferer, and without it the first Forms for Editors submit fails.
+    $forms=Get-DwBuildRows $conn "SELECT CASE WHEN OBJECT_ID(N'dbo.FormSubmit', N'U') IS NULL OR COL_LENGTH(N'dbo.FormSubmit', N'FormSubmitReferer') IS NOT NULL THEN 1 ELSE 0 END AS ready"
+    if($forms[0].ready -ne 1){throw 'FormSubmit lacks FormSubmitReferer, so no Forms for Editors submit can be stored. Run Restore-DwEditionDatabase.ps1 -Apply again with the host stopped; it adds the column.'}
     # Friendly URLs carry the language prefix; the edition's critical paths already do.
     $lang=if($c.customer.language){$c.customer.language.ToLowerInvariant()}else{'en-us'}
     $pages=@(@($r.editionModel.criticalPaths)+@("/$lang/shop","/$lang/cart/","/$lang/customer-center","/$lang/sign-in/sign-in") | Select-Object -Unique)

@@ -32,7 +32,7 @@ try {
     }
     $master=Get-DwBuildConnection $SqlServer 'master'
     $r=Get-Content -Raw $p.Release | ConvertFrom-Json
-    if (-not $Apply -or -not $PSCmdlet.ShouldProcess($Database,'Import new database and set scrubbed passwords')) { Write-Host 'Plan: import NEW database, repair administrator and three persona passwords before startup.'; exit 0 }
+    if (-not $Apply -or -not $PSCmdlet.ShouldProcess($Database,'Import new database and set scrubbed passwords')) { Write-Host 'Plan: import NEW database, add the form submit column when it is missing, repair administrator and three persona passwords before startup.'; exit 0 }
     $marker=Join-Path $p.Notes 'database-owned.json'
     $exists=(Get-DwBuildRows $master 'SELECT DB_ID(@db) AS id' @{db=$Database})[0].id -isnot [DBNull]
     if ($exists -and -not (Test-Path $marker)) { throw 'Database already exists and is not owned by this build. Choose a new name.' }
@@ -44,6 +44,10 @@ try {
         Invoke-DwBuildCommand sqlpackage @('/Action:Import',"/SourceFile:$($r.bacpacPath)","/TargetConnectionString:$conn",'/p:CommandTimeout=300')
         Write-DwBuildJson $marker @{database=$Database;server=$SqlServer;sha256=$r.bacpac.sha256}
     }
+    # Forms for Editors cannot store a submit without FormSubmit.FormSubmitReferer, and no new database
+    # carries it: Dynamicweb.Forms defines no such column and since 10.13.3 adds it only when it reads a row,
+    # so never on an empty table. Idempotent: a column that is there is left alone.
+    $null=Invoke-DwSqlNonQuery -ConnectionString $conn -Sql "IF OBJECT_ID(N'dbo.FormSubmit', N'U') IS NOT NULL AND COL_LENGTH(N'dbo.FormSubmit', N'FormSubmitReferer') IS NULL ALTER TABLE [dbo].[FormSubmit] ADD [FormSubmitReferer] nvarchar(1000) NULL"
     $secretPath=Join-Path $p.Notes 'build-secrets.local.json'
     $secrets=if(Test-Path $secretPath){Get-Content -Raw $secretPath | ConvertFrom-Json -AsHashtable}else{@{}}
     foreach ($entry in @(@{id=2;env='DW_ADMIN_PASSWORD'},@{id=100101;env='DW_BUYER_PASSWORD'},@{id=100102;env='DW_CSR_PASSWORD'},@{id=100103;env='DW_ACCOUNT_ADMIN_PASSWORD'})) {

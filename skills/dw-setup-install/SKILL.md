@@ -93,11 +93,12 @@ pwsh -NoProfile -File "scripts/install-swift2.ps1" `
 1. Downloads the latest Swift 2 package set from `doc.dynamicweb.com`
 2. Extracts the `.bacpac` from the database ZIP
 3. Runs `sqlpackage /Action:Import` to create the database
-4. Extracts Swift 2 files to the target `FilesPath`
-5. Extracts demo product images
-6. Copies the temporary `Custom.Mcp` add-ins into `Files/System/AddIns/Installed/Custom.Mcp.10.0.0`
-7. Writes a one-time bootstrap manifest to `Files/System/mcp-bootstrap.json`
-8. Writes `GlobalSettings.Database.config` with the database connection
+4. Adds `FormSubmit.FormSubmitReferer` when the database lacks it (see "The form submit column" below)
+5. Extracts Swift 2 files to the target `FilesPath`
+6. Extracts demo product images
+7. Copies the temporary `Custom.Mcp` add-ins into `Files/System/AddIns/Installed/Custom.Mcp.10.0.0`
+8. Writes a one-time bootstrap manifest to `Files/System/mcp-bootstrap.json`
+9. Writes `GlobalSettings.Database.config` with the database connection
 
 **Local installs only**: a hosted install is handed over already installed, so the script has no target there.
 
@@ -124,6 +125,7 @@ If the automated script fails (no sqlpackage, download blocked, wrong SQL Server
    sqlpackage /Action:Import /TargetServerName:localhost /TargetDatabaseName:swift2 /SourceFile:swift2.bacpac
    ```
    **Local installs only**: a hosted install is handed over already installed, so there is no database to import.
+   Then add the form submit column when it is missing (see "The form submit column" below).
 
 4. **Copy Custom.Mcp add-ins** into `Files/System/AddIns/Installed/Custom.Mcp.10.0.0`
 
@@ -207,6 +209,26 @@ Two checks stay manual because the script cannot see them:
    means it is not
 2. the config used by the current agent contains the Dynamicweb MCP server entry, and the agent
    can call `get_pages_by_area_id` (returns the standard Swift 2 page structure)
+
+### The form submit column
+
+Forms for Editors cannot store a submit on a database whose `FormSubmit` table has no
+`FormSubmitReferer` column: the page shows "An error occurred while attaching module" with
+`Invalid column name 'FormSubmitReferer'` and nothing is saved. No new database carries the column.
+Dynamicweb.Forms defines it in neither its base schema nor its updates, and the only code that adds
+it runs when a submit row is read, so never on an empty table [dw 10.30.8]. A database that listed
+a submit on an older version already has it.
+
+`install-swift2.ps1` and the base build's `Restore-DwEditionDatabase.ps1` add it, and
+`Test-DwDemoBaseBuild.ps1` fails without it. On any other database run this once, before the first
+submit. It changes nothing when the column is there:
+
+```sql
+IF COL_LENGTH('FormSubmit', 'FormSubmitReferer') IS NULL
+    ALTER TABLE FormSubmit ADD FormSubmitReferer nvarchar(1000) NULL
+```
+
+**Local installs only**: a hosted install has no SQL access, so there the host's owner runs it.
 
 ---
 
