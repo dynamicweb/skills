@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.11.1]
+
+- `dw-demo-base`, `branded-demo-paths.md`, "Start with the customer data file": what the file and the copy must hold before the site is requested, from the first build of a real catalogue on this route. One product carries what the product page is measured on (two images, one document, two related products, five specification values); every product is named in `prices.listPrices`; the copy slots the file has no member for (Home feature tiles and figures, About figures, navigation teasers, the product page's feature list and FAQ) are overwritten in the copy; a fifth top group has no facet. The site's build time is for capturing the brand. That build found the first three on its measure run and was built twice.
+- Same file, traps: on a generated copy the facet names stay the sample's while the values are the customer's.
+
 ## [6.11.0]
 
 - `dw-demo-base`: the customer data file is the first step of a build on the default path. `branded-demo-paths.md` path A names the Distribution's generator (`tools/sample-data/rewrite-sample-data.py`), the file's shape and worked example, what each section of the file puts in the demo-local layer, the command, and that the copy is delivered in place of `sample-data` as the first delivery of a fresh site. `SKILL.md` says the same where it introduces the three paths. Until now path A described authoring that layer by hand and no skill named the generator.

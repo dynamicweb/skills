@@ -100,6 +100,32 @@ the demo edition with the copy where `sample-data` stood (steps 5 and 6).
 *Check:* the storefront lists the customer's products and none of the shipped ones, and each
 persona signs in.
 
+**Make the copy complete before the site is requested.** The copy is only ever the first delivery,
+so a gap found on the built site costs a second build. Four things are settled on the file and the
+copy, where they cost seconds:
+
+- **One product carries what the product page is measured on:** two images, one document, two
+  related products and five specification values, so its top group names five `specFields`. The
+  measure reads one product page. A catalogue taken from a public site brings the images and
+  little else: add a product sheet (a one-page PDF with the description and the specifications)
+  to the products you will show, and fill the specification values from the product copy. Where
+  the provisioning command plans the build, it names what that page misses before it builds, as a
+  finding that starts `MEASURE WILL FAIL`. Fix the file on that finding, not on the measure run.
+- **Every product is named in `prices.listPrices`** with the amount of its `listPrice`, so the
+  generator reports no price gap.
+- **The copy slots the file has no member for still hold the shipped words.** `brandCopy` writes
+  the Home hero, About, the header and the footer. The other Home paragraphs (the feature tiles
+  and the figures), the About figures, the navigation teasers and the product page's feature list
+  and FAQ keep the sample's copy. Overwrite them in the copy before delivery (step 3, content YAML
+  at the same paths) with a script that names each file and field, so a rebuild repeats it.
+- **A fifth top group has no facet.** The sample carries four product categories. A top group
+  beyond the fourth gets its own data model and specification fields, and no storefront facet
+  (the generator's report says so). Fold the catalogue into four top groups, or accept that
+  group without a facet.
+
+**Use the build time.** While the site builds, capture the brand (palette, fonts, logo, favicon:
+steps 4 and 7), so the first minutes on the new site are writes, not research.
+
 What the file does not carry today, and so stays a later step: variants, page content beyond the
 copy slots above, the colours (step 4) and the five master fields of step 7. Steps 1 and 2 still
 apply before the file is written; step 3 is then the generator's output plus whatever the file
@@ -315,7 +341,10 @@ Four traps were met on one build each and are stated as that build found them:
 
 - **The edition's facets read the sample category fields.** After the catalogue is rewritten, the
   storefront facets render empty or stale. Point the facet index fields at the new fields and keep
-  their system names and query parameters.
+  their system names and query parameters. On a copy the generator wrote, the facet values are the
+  customer's and the facet names are still the sample's ("Material class" over a list of bike
+  types): rename the `Name` of each facet in the storefront repository's `Products.facets` on the
+  host, keep `Field` and `QueryParameter`, and recycle.
 - **A SQL insert into `EcomPrices` must match the database's columns.** `PriceIsInformative` and
   `PriceLanguageId` are not on every database. Read `sys.columns` for the table and leave out the
   columns it lacks.
