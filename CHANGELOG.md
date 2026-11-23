@@ -3,6 +3,12 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.12.0]
+
+- `dw-demo-base`: `scripts/Invoke-DwDemoMcp.ps1`, one command-line entry to a site's MCP endpoint over `Dw.Api.psm1` (`-List [-Filter]`, `-Schema <tool>`, `-Call <tool> -Arguments <json>`). The connection comes from `-BaseUrl` with the key in `$env:DW_MCP_TOKEN`, else from the `dw-demo-*` server in the solution's `.mcp.json`; the key is never printed, never in an error and never on an argument list. `SKILL.md` says at the MCP preflight that a site that came up during the session is not in the session's tools and is called with this script, never with a client of one's own; `mcp-setup.md` names it first in the fallback section. Four demo builds in a row each wrote their own client because none found the module.
+- `dw-demo-swift`: `scripts/Save-DwStorefrontShot.ps1` with `storefront-shot.mjs`, full-page screenshots per path and viewport (a 1440 desktop and an iPhone 12), signed out or signed in as one user with the password read from `$env:DW_SHOT_PASSWORD`. It seeds the consent cookie, proves the sign-in on the customer centre before any shot and prints one JSON result. The same four builds each wrote their own screenshot script.
+- `dw-demo-base` `branded-demo-paths.md`, "Start with the customer data file": when the site is up, name the two scripts.
+- Hermetic Pester suites for both scripts.
 ## [6.11.1]
 
 - `dw-demo-base`, `branded-demo-paths.md`, "Start with the customer data file": what the file and the copy must hold before the site is requested, from the first build of a real catalogue on this route. One product carries what the product page is measured on (two images, one document, two related products, five specification values); every product is named in `prices.listPrices`; the copy slots the file has no member for (Home feature tiles and figures, About figures, navigation teasers, the product page's feature list and FAQ) are overwritten in the copy; a fifth top group has no facet. The site's build time is for capturing the brand. That build found the first three on its measure run and was built twice.
