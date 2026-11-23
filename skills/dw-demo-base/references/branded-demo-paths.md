@@ -126,6 +126,14 @@ copy, where they cost seconds:
 **Use the build time.** While the site builds, capture the brand (palette, fonts, logo, favicon:
 steps 4 and 7), so the first minutes on the new site are writes, not research.
 
+**When the site is up, use the two scripts, not your own.** The site's MCP server was registered
+after this session started, so its tools are not loaded here: call them with
+[`../scripts/Invoke-DwDemoMcp.ps1`](../scripts/Invoke-DwDemoMcp.ps1) from the demo root
+(`-List -Filter color`, then `-Call <tool> -Arguments '<json>'`). Take the screenshots, signed out
+and signed in as the buyer, with
+[`dw-demo-swift/scripts/Save-DwStorefrontShot.ps1`](../../dw-demo-swift/scripts/Save-DwStorefrontShot.ps1)
+(the buyer's password in `$env:DW_SHOT_PASSWORD`, never on the command line).
+
 What the file does not carry today, and so stays a later step: variants, page content beyond the
 copy slots above, the colours (step 4) and the five master fields of step 7. Steps 1 and 2 still
 apply before the file is written; step 3 is then the generator's output plus whatever the file

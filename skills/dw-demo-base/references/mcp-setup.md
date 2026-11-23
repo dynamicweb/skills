@@ -277,6 +277,12 @@ key's length, the token id and the probe status codes, which is everything the p
 
 Steps 1–4 wire the Dynamicweb MCP server into the **Claude Code client**, which gates a newly-configured project server behind a one-time **interactive approval prompt** ("Pending approval"). That prompt is an interactive-only gate: an autonomous or headless agent that never sees a human can wait on it forever — the tools never surface and the run stalls with no error to react to. This is the tool-side twin of the OAuth interactive-click blocker the "Why API Key by default" preamble calls out: the API-Key default clears the *auth* gate, but the client's *approval* gate is separate.
 
+**Start with the entry script.** [`../scripts/Invoke-DwDemoMcp.ps1`](../scripts/Invoke-DwDemoMcp.ps1)
+reads the site's `.mcp.json` (or `-BaseUrl` with the key in `$env:DW_MCP_TOKEN`) and lists the tools
+(`-List -Filter <regex>`), prints a tool's input schema (`-Schema <tool>`) or calls one
+(`-Call <tool> -Arguments '<json>'`). This is also the path for a site that came up during the
+session, whose server the client never loaded. What follows is what it does underneath.
+
 **Sanctioned fallback: the DW MCP endpoint is a plain JSON-RPC 2.0 service over HTTPS**, not a Claude-proprietary protocol. With the API-Key bearer from Step 3 in an `Authorization: Bearer …` header, the full tool surface is directly callable without the client's tool layer — issue the standard JSON-RPC handshake against `https://localhost:<port>/admin/mcp` yourself:
 
 1. **`initialize`** — POST `{ "jsonrpc":"2.0","id":1,"method":"initialize","params":{ "protocolVersion":"…","capabilities":{},"clientInfo":{…} } }`.

@@ -149,7 +149,8 @@ Every "fake pattern" in a Swift demo (raw SQL probes on `AccessUserGroupRelation
 The first three files are the mechanical half of the mobile pass: the rules, the why and the Swift 2
 trap catalogue stay in [references/mobile-pass.md](references/mobile-pass.md), and these files are the
 how. `Merge-DwLayerManifests.ps1` is the staging half of the deserialize flow and needs only
-PowerShell 7 (run it; the rule stays in deserialize-flow.md §3). The three probes drive a real
+PowerShell 7 (run it; the rule stays in deserialize-flow.md §3). The three probes and the
+screenshot script drive a real
 headless Chromium, so they need Node.js 20+ with `playwright`
 resolvable from the `scripts/` folder (`npm install playwright && npx playwright install
 chromium` there). A lookup that finds no runner makes the leg **UNRUNNABLE**, reported with
@@ -160,11 +161,13 @@ the failed lookup named — never a silent pass.
 | [Test-DwViewportOverflow.ps1](scripts/Test-DwViewportOverflow.ps1) | Read-only (optionally writes a JSON result file) | Runs the probe below over a set of pages at a set of viewports and prints one merged JSON result. Every threshold is a parameter; the defaults are the Swift 2 values (992px desktop breakpoint, 4.5/3.0 contrast, 0.25 overlap, iPhone 12 at 390 + 430 + a 1440 desktop control). A sub-breakpoint viewport with no device descriptor is REFUSED, not measured |
 | [overflow-probe.js](scripts/overflow-probe.js) | Read-only | The generic canvas-fit / legibility / overlap core: `innerWidth === requested` **and** `body.scrollWidth === innerWidth`, the offender named by RIGHT EDGE with out-of-flow elements (a closed off-canvas drawer) reported as set aside, WCAG contrast per text leaf, and line-box text overlap |
 | [nav-affordance-probes.mjs](scripts/nav-affordance-probes.mjs) | Read-only (optionally writes a JSON result + a screenshot) | The four nav-affordance probes (caret DOM, vertical Popper-gap reach, open-state caret, horizontal reach). SKIPs with a reason on a flat nav rather than faking a PASS; dismisses the DW cookie modal first. One home per repo: the Foundry keeps its own harness copy for its edition gate |
+| [Save-DwStorefrontShot.ps1](scripts/Save-DwStorefrontShot.ps1) | Read-only against the site; writes PNG files under `-OutDir` (default `notes/qa`) | Full-page screenshots, one per path per viewport (a 1440 desktop and an iPhone 12 by default), signed out, or signed in as `-UserName` with the password read from the environment variable `-PasswordEnv` names (default `DW_SHOT_PASSWORD`, never a parameter). Seeds the consent cookie, scroll-sweeps, proves the sign-in on `-IdentityPath` before any shot, and prints one JSON result (files, HTTP status per path, sign-in proven). Runs [storefront-shot.mjs](scripts/storefront-shot.mjs); selectors from [storefront-browser-checks.md](references/storefront-browser-checks.md). Hermetic tests: [scripts/tests/Save-DwStorefrontShot.Tests.ps1](scripts/tests/Save-DwStorefrontShot.Tests.ps1) |
 | [Merge-DwLayerManifests.ps1](scripts/Merge-DwLayerManifests.ps1) | Writes (dry run by default, `-Apply`): the `SerializeRoot` mode trees, one merged manifest per mode, optionally the union `Serializer.config.json` | Stages several Distribution layers without the manifest clobber of a per-layer copy, remaps `areaId` on request, and asserts entry counts and manifest-named files. Owning reference: [deserialize-flow.md](references/deserialize-flow.md) §3 |
 
 ```powershell
 pwsh -NoProfile -File scripts/Test-DwViewportOverflow.ps1 -BaseUrl $env:DW_BASE_URL -Path /,/products
 node scripts/nav-affordance-probes.mjs --url $env:DW_BASE_URL --path /swift-2/home --out nav.json
+pwsh -NoProfile -File scripts/Save-DwStorefrontShot.ps1 -BaseUrl $env:DW_BASE_URL -Path /en-us/home,/en-us/shop -OutDir <demo-root>/notes/qa
 pwsh -NoProfile -File scripts/Merge-DwLayerManifests.ps1 -DistributionRoot <demo-root>/distribution -Layer base,surface-swift -SerializeRoot <SerializeRoot>
 ```
 

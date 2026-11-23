@@ -17,6 +17,13 @@ MCP, and every step after the MCP wiring assumes it is live. If the MCP wiring f
 and fix it before continuing — do not substitute direct SQL or file edits for the tool
 calls later steps name.
 
+**A site that came up during this session is not in this session's tools.** Its MCP server was
+registered after the session started, so its tools are not loaded here. Call it with
+[scripts/Invoke-DwDemoMcp.ps1](scripts/Invoke-DwDemoMcp.ps1) (`-List`, `-Schema <tool>`,
+`-Call <tool> -Arguments '<json>'`; it reads the site's `.mcp.json`), and use
+[`Dw.Api.psm1`](../dw-data-access/scripts/Dw.Api.psm1) for uploads and the Management API. Never
+write a client of your own.
+
 The ladder those rungs belong to is foundational —
 [`dw-data-access`](../dw-data-access/SKILL.md) "Surfaces into a Dynamicweb instance"; this skill owns
 only the demo deltas ([references/surface-priority.md](references/surface-priority.md)).
@@ -183,6 +190,7 @@ For release-pinned function coverage and equivalent read-only check bindings, us
 | [Invoke-DwPiiScan.ps1](scripts/Invoke-DwPiiScan.ps1) | Read-only (optionally writes a report file) | The mechanical half of the PII/vendor sweep: string-column census, person-PII counts, whole-DB term sweep (SQL local-only), rendered-page and download probes by URL. Classes and counts only — never values |
 | [Remove-SwiftVendorBoilerplate.ps1](scripts/Remove-SwiftVendorBoilerplate.ps1) | Dry-run by default; `-Apply` rewrites stock vendor boilerplate in Swift items + module settings, backing originals up | Content-matched debrand of the stock phrases (pii-sweep Rule 2); cookie names untouched by construction; lists the manual-pass remainder. Local installs only |
 | [Test-DwDemoStoryline.ps1](scripts/Test-DwDemoStoryline.ps1) | Read-only (optionally writes a JSON result file) | The consumer self-check, not a gate: every storyline page answers 200 and carries no placeholder copy in its VISIBLE TEXT, and every persona signs in with the session proved to BE that persona. Zero probes is FAIL. Secrets from the environment or a secrets file, masked in every line. Its hermetic Pester suite is [scripts/tests/Test-DwDemoStoryline.Tests.ps1](scripts/tests/Test-DwDemoStoryline.Tests.ps1) |
+| [Invoke-DwDemoMcp.ps1](scripts/Invoke-DwDemoMcp.ps1) | `-List` and `-Schema` read-only; `-Call` writes whatever the tool writes | One command-line entry to a site's MCP endpoint when the session's client never loaded that server: connection from `-BaseUrl` + the key in `$env:DW_MCP_TOKEN` (`-TokenEnv`), else the `dw-demo-*` server in `.mcp.json`; tool list with `-Filter`, input schema, one call printed as JSON (a tool error exits 1 with its own message). The key is never printed or on an argument list. Over `Dw.Api.psm1`; hermetic tests in [scripts/tests/Invoke-DwDemoMcp.Tests.ps1](scripts/tests/Invoke-DwDemoMcp.Tests.ps1) |
 | [admin-shell-driver.mjs](scripts/admin-shell-driver.mjs) | Read-only by default; `gridEditCell` writes one cell behind a read-back/abort guard | The five DW 10.28 admin-shell Playwright guards as an importable module plus a small CLI. The rules stay in [references/browser-automation.md](references/browser-automation.md) — this is the how. Node.js 20+ with Playwright |
 
 
