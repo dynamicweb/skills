@@ -80,6 +80,21 @@ failed for step: <n>") or compare the validation groups' fields with what the st
   and delete the old one with `delete_order`.
 - **Where prices are hidden from anonymous visitors**, a price check runs signed in, and a signed-in price
   is the buyer's own (contract, group or tier row), not the list price.
+- **A scripted Forms for Editors submit must send the page as `Referer`.** A post without the header
+  bans the sender's address for a month: the host writes `Files/System/_BannedIps.txt`
+  (`<address>;<until>;Form BAN: Bad form (HTTP_REFERER is empty);`) and answers 403 to every request
+  from that address, the storefront and every probe included. Lift it by deleting the line and
+  recycling the host. To submit as a browser does, fetch the page, read the form (`id="dw-form-<id>"`)
+  and replay what its `onsubmit` sets: `FormCH1_h` gets the hash in the script, `_sys_to_email` is
+  emptied, and the `action` becomes `/Default.aspx?ID=<page>&PID=<paragraph>`. Post every other input
+  as rendered, the hidden ones included, as `multipart/form-data`, in the session that fetched the
+  page, with the page as `Referer`, and not within two seconds of the fetch. A stored submit answers
+  with a redirect to the page with `?pid=<paragraph>&s=...` [dw 10.30.8].
+- **The first Forms for Editors submit on a new database fails without the `FormSubmitReferer`
+  column.** The page shows "An error occurred while attaching module" with `Invalid column name
+  'FormSubmitReferer'` and nothing is stored [dw 10.30.8]. The base build and the Swift installer add
+  the column; for any other database see [dw-setup-install](../../dw-setup-install/SKILL.md) "The form
+  submit column".
 
 ## Cleaning up after a check
 
@@ -89,3 +104,7 @@ and soft-delete it with `delete_order {id, force: true}`, together with any cart
 the buyer's delivery API order list at once
 ([order-lifecycle.md](../../dw-commerce-orders/references/order-lifecycle.md) "Seeding an order history
 the buyer sees"). Do it before the demo call.
+
+A form a check created: delete its submissions before the form. Deleting the form alone removed the
+form, its fields and the submitted values and left the `FormSubmit` row behind [dw 10.30.8].
+`delete_pages` moves a page to the trash; `purge_deleted_page` removes it.
