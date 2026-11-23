@@ -3,6 +3,11 @@
 All notable changes to the Dynamicweb Skills plugin are recorded here. The
 `version` field in `.claude-plugin/marketplace.json` tracks these entries.
 
+## [6.12.1]
+
+- `dw-demo-base`, `branded-demo-paths.md`, "Start with the customer data file", after the generator stopped letting sample claims through: the copy slots the file has no member for carry plain, true defaults (figures counted from the file) and the report's `residualSampleClaims` must be empty; overwrite the slots the demo shows with the customer's own words. Each top group's facet field needs its own label, because the copy names its facets after those labels. The line that asked for every product in `prices.listPrices` is gone: the generator prices a product from its `listPrice` either way and no longer warns.
+- Same file, traps: renaming facet names on the host is only for a copy written by an older generator.
+
 ## [6.12.0]
 
 - `dw-demo-base`: `scripts/Invoke-DwDemoMcp.ps1`, one command-line entry to a site's MCP endpoint over `Dw.Api.psm1` (`-List [-Filter]`, `-Schema <tool>`, `-Call <tool> -Arguments <json>`). The connection comes from `-BaseUrl` with the key in `$env:DW_MCP_TOKEN`, else from the `dw-demo-*` server in the solution's `.mcp.json`; the key is never printed, never in an error and never on an argument list. `SKILL.md` says at the MCP preflight that a site that came up during the session is not in the session's tools and is called with this script, never with a client of one's own; `mcp-setup.md` names it first in the fallback section. Four demo builds in a row each wrote their own client because none found the module.

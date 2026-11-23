@@ -111,13 +111,17 @@ copy, where they cost seconds:
   to the products you will show, and fill the specification values from the product copy. Where
   the provisioning command plans the build, it names what that page misses before it builds, as a
   finding that starts `MEASURE WILL FAIL`. Fix the file on that finding, not on the measure run.
-- **Every product is named in `prices.listPrices`** with the amount of its `listPrice`, so the
-  generator reports no price gap.
-- **The copy slots the file has no member for still hold the shipped words.** `brandCopy` writes
-  the Home hero, About, the header and the footer. The other Home paragraphs (the feature tiles
-  and the figures), the About figures, the navigation teasers and the product page's feature list
-  and FAQ keep the sample's copy. Overwrite them in the copy before delivery (step 3, content YAML
+- **The copy slots the file has no member for carry plain defaults, not the customer's voice.**
+  `brandCopy` writes the Home hero, About, the header and the footer. For the other Home
+  paragraphs (the feature tiles and the figures), the About figures, the navigation teasers and
+  the product page's feature list and FAQ the generator writes text that is true for the copy:
+  figures counted from the file, and only what the copy carries. Its report lists anything it
+  could not make true under `residualSampleClaims`; that list must be empty. Overwrite the slots
+  the demo shows with the customer's own words in the copy before delivery (step 3, content YAML
   at the same paths) with a script that names each file and field, so a rebuild repeats it.
+- **Give each top group's facet field its own label.** The copy carries the storefront
+  repository's facet file with each facet named after the label of the field the file marks
+  `facet`. Two top groups whose facet fields share a label give two facets of one name.
 - **A fifth top group has no facet.** The sample carries four product categories. A top group
   beyond the fourth gets its own data model and specification fields, and no storefront facet
   (the generator's report says so). Fold the catalogue into four top groups, or accept that
@@ -349,10 +353,11 @@ Four traps were met on one build each and are stated as that build found them:
 
 - **The edition's facets read the sample category fields.** After the catalogue is rewritten, the
   storefront facets render empty or stale. Point the facet index fields at the new fields and keep
-  their system names and query parameters. On a copy the generator wrote, the facet values are the
-  customer's and the facet names are still the sample's ("Material class" over a list of bike
-  types): rename the `Name` of each facet in the storefront repository's `Products.facets` on the
-  host, keep `Field` and `QueryParameter`, and recycle.
+  their system names and query parameters. A copy the generator wrote names its facets after the
+  customer's field labels itself; a copy written by an older generator keeps the sample's names
+  ("Material class" over a list of bike types), and there the fix is to rename the `Name` of each
+  facet in the storefront repository's `Products.facets` on the host, keep `Field` and
+  `QueryParameter`, and recycle.
 - **A SQL insert into `EcomPrices` must match the database's columns.** `PriceIsInformative` and
   `PriceLanguageId` are not on every database. Read `sys.columns` for the table and leave out the
   columns it lacks.
