@@ -15,8 +15,8 @@ as a PIM data model with imported products. The result is an improved version of
 never a pixel copy. "Improved" means better structure, navigation, filtering, and mobile layout;
 it never means rewritten text.
 
-This skill is self-contained: everything a step needs is in this file and its `references/`.
-This file is the overview; each step names the reference that holds its recipe.
+This file is the overview; each step names the reference that holds its recipe. The field rules a
+paragraph needs to render are in `dw-swift-page-blocks`, linked from the content rebuild.
 
 ## MCP preflight
 
@@ -25,6 +25,16 @@ intake, list the server's tools and its websites to confirm it is the target sol
 Dynamicweb MCP server is connected, stop and ask the user to connect one: the migration cannot be
 planned without reading the target. When a single operation has no MCP tool, use the Management
 API next, then the serializer; raw SQL only as the last resort and only on a local install.
+
+Then read what the target solution uses: its item types (`get_item_types`), its layouts
+(`get_layouts`), and its existing websites with their colour scheme groups, typography and button
+styles (`get_areas`). Restate this in the intake together with the design the user wants for the
+new website:
+
+- **Swift 2 is installed and wanted:** continue. Reuse the solution's own item types and design
+  settings where they fit, and propose any new ones at the website-proposal checkpoint.
+- **Swift 2 isn't installed, or the user wants something else:** say so and stop. Never install
+  Swift 2 or build on another design without the user's OK.
 
 Besides MCP, the flow needs a working folder, a scripting runtime the agent can run (Node.js or
 Python), and a way to take full-page screenshots. A catalog migration also needs the dw CLI with
@@ -83,16 +93,19 @@ section; the intake only asks for what it does not already record.
 ## Rules for every step
 
 - **Respect the source.** Read `robots.txt` first and keep its crawl delay (one request per second
-  when it states none). When it blocks pages the migration needs, stop and ask. The MCP migration
-  tools that read the source (site extraction and media import) send several requests at a time
-  and do not read `robots.txt`, so use them only when the user confirms the source's owner accepts
-  that load; otherwise build from the files of step 2.
+  when it states none). When it blocks pages the migration needs, stop and ask.
 - **Keep content verbatim.** Names, descriptions, and specifications stay as scraped, also when a
   tool description lists field writing rules. Cleaned values (spelling, units, decimal separators)
   go in separate facet fields; the displayed value stays as scraped. Never invent data.
   Content the source generates (ratings, prices, stock, opening hours, product teasers) is not
   copied as fixed text, because it goes out of date: rebuild it with a component that generates
-  it, or leave it out and side-list it. A rating is always shown with its source (for example
+  it, or leave it out and side-list it. Before copying a list or carousel of teasers (latest news,
+  related or best-selling products), check whether the source fills it automatically from posts
+  or products: the markup shows a loop or query, the same list appears on several pages, or it
+  carries dates or prices. If it does, it is generated, even when it renders as ordinary cards:
+  rebuild it with a component that fills itself, or leave it out and side-list it. A list an
+  editor put together by hand is content and is kept. When it isn't clear, side-list it as a
+  question for the owner. A rating is always shown with its source (for example
   Google or Trustpilot).
 - **Bulk data never passes through the conversation or subagents.** Scripts write files, the dw
   CLI uploads them, and Data Integration activities import them.
@@ -126,8 +139,7 @@ categories and pages that cover every product shape and page type.
 
 Save the content pages and their images, and when the catalog is in scope the listings and
 product pages, to resumable JSON Lines files in the working folder, keeping the raw responses so
-parsing can rerun without crawling again. Step 5 builds from these files whenever the migration
-tools do not read the source. [catalog-import.md](references/catalog-import.md) ("Scrape into
+parsing can rerun without crawling again. Step 5 builds from these files. [catalog-import.md](references/catalog-import.md) ("Scrape into
 files").
 **Report:** record counts per file, five sample products or pages, and any field empty in more
 than 10% of records.
@@ -138,7 +150,14 @@ Propose one data model per product category, a category field for every specific
 groups for the specifications that pick a variant, and one clean product group tree.
 [catalog-import.md](references/catalog-import.md) ("Data model").
 **Decision checkpoint:** the proposal and a table mapping each source specification to its
-field, before anything is created.
+field, before anything is created. List the fields that will be facets and the index fields they
+need (indexed, not analysed); a facet across several data models needs one index field per data
+model. When the storefront index is shared with other websites, ask for those index changes here.
+Ask how stock is handled when the source doesn't show it: delivered later by an integration, set
+by the owner, or products sold without stock tracking (`ProductNeverOutOfStock`). Never invent
+stock numbers; without an answer, every product shows as out of stock and can't be added to the
+cart. A source with no public prices (B2B, sign-in) imports no prices: say here what replaces price
+and add-to-cart on the shop pages (sample request, quote, sign-in).
 
 ### Step 4: Import
 
@@ -149,19 +168,22 @@ them back for the later files, after checking that no product in the solution al
 source product's number. [catalog-import.md](references/catalog-import.md) ("Import order" through
 "Proving an import").
 **Report:** product, variant, price, and image counts in the solution, checked on the frontend
-pages of products nobody has opened yet. When caches hide imported data, stop and tell the user
+pages of products nobody has opened yet (on a new website, in step 5, once the shop pages exist). When caches hide imported data, stop and tell the user
 rather than working around it.
 
 ### Step 5: Website
 
-First propose the page tree, the color scheme and logo, and which standard Swift 2 component each
-source section becomes. **Decision checkpoint:** the proposal. Then build: the website with its header and
+First propose the page tree, the color scheme, typography and logo, and which standard Swift 2
+component each source section becomes. **Decision checkpoint:** the proposal. Then build: the website with its header and
 footer, the shop page with the product catalog shell and the cart and checkout pages when the
 catalog is in scope, and the content pages. Swift 2 templates find pages by navigation tag: make
 sure the website has the shop page tagged `Shop` and, for a catalog, the service pages tagged
 `ProductSliderService` and `VariantSelectorService` (copy them from an existing Swift 2 website in
-the solution when missing). Point every internal link at the new pages, and check the frontend
-health of every page. [content-rebuild.md](references/content-rebuild.md). **Report:** links to
+the solution when missing). Point every internal link at the new pages. While only a subset is
+built, decide at the website-proposal checkpoint what a link to an unbuilt page does, so that no
+link is dead and none opens another website's page, and record the choice. List each such link in
+`RUN-STATE.md`: the page and field it sits in, and the source page it should point to. Check the
+frontend health of every page. [content-rebuild.md](references/content-rebuild.md). **Report:** links to
 all pages.
 
 ### Step 6: Catalog experience
@@ -182,7 +204,8 @@ of rounds is reached. [review-loop.md](references/review-loop.md).
 
 When the user approves a subset, widen the scope and run steps 1 to 7 again for the rest. The
 scripts, data model, and import activities from the first run are reused, so the full catalog
-costs little more agent work than the subset.
+costs little more agent work than the subset. When the rest is built, point every link listed in
+`RUN-STATE.md` at its new page, and read it back.
 
 ## Out of scope
 

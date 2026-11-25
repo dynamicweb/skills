@@ -538,10 +538,10 @@ uses `ParagraphCustomFontId` resolving against `Fonts/<id>.json`'s `Family`.
 
 Four `Area` columns bind an area to its Style assets: `AreaColorSchemeGroupId` (the root `Id` of
 `ColorSchemes/<brand>.json`), `AreaColorSchemeId` (the area's default scheme, e.g. `light`),
-`AreaButtonStyleId` and `AreaTypographyId`. No MCP tool is known to write these four columns, so in
-product ask the user, and the change needs a host restart before the resolved style URLs reload. Verify
-with `fetch_frontend_page_html`: the served head carries three new `<link>` entries under
-`Styles/ColorSchemes/`, `Styles/Buttons/` and `Styles/Typography/`.
+`AreaButtonStyleId` and `AreaTypographyId`. `save_areas` writes all four
+(`colorSchemeGroupId`, `colorSchemeId`, `buttonStyleId`, `typographyId`) and the page renders with
+them at once, no restart. Check the served page head (`fetch_frontend_page_html`) for the three
+`<link>` entries under `Styles/ColorSchemes/`, `Styles/Buttons/` and `Styles/Typography/`.
 Out of product: [`recipes-swift.md`](../../dw-data-access/references/recipes-swift.md) "Wire an Area to a brand's Style assets".
 
 **When to use Style assets vs a project CSS file:** use Style assets (Tier 0) for the brand palette +

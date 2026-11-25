@@ -20,7 +20,8 @@ Use the same pages and products every round, so scores compare.
 Measure on the phone pages, besides the screenshots: the page does not scroll sideways (its scroll
 width equals the viewport width; if not, name the element that sticks out), tap targets in the
 menu and the buying path are at least 44 px, add-to-cart can be reached from the product page's
-first screen or a sticky bar, and the phone menu reaches as many levels as the desktop menu.
+first screen or a sticky bar, and the desktop and phone menus both reach every level of the site's navigation; name any page
+neither reaches.
 
 All browser tabs share one cart: a critic or check that adds products changes the cart for every
 tab.

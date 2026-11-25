@@ -202,6 +202,19 @@ auto-correction on this path. A wrong value renders as garbled raw text, overlap
     editor's `dw-*` styles, which follow the site's typography. No Bootstrap classes and no
     inline style: an editor can't choose them and may lose them on the first edit. Markup the
     editor can't produce belongs in a layout template, added only when agreed.
+  - The size, font, weight and case of headings come from the website's typography (base size ×
+    scale), not from the markup. Decide the typography from the brand before the first page: to
+    make headings larger, smaller or uppercase, change the typography's base size, scale or
+    heading case with `save_typographies` and assign it with `save_areas`. Use a new typography
+    named after the site, never an edit to one another website uses. The editor has two menus for
+    this: the element menu (Normal, H1–H6) sets the heading level for the page structure, and the
+    style menu (Heading 1–6, Paragraph 0, Paragraph, Paragraph 1, which are the `dw-h*` and
+    `dw-paragraph*` styles) sets the look. Give every heading both: its element and a style,
+    normally the matching one (`<h2 class="dw-h2">`), and another level's style when it should
+    look different (an H2 with the style Heading 1 is `<h2 class="dw-h1">`). Only a heading with a
+    style looks the same in the editor as on the website; a bare `<h2>` shows at body size in the
+    editor. Never write other markup into the field. A look the typography and the editor's styles
+    can't give is a template change, made only when agreed.
   - Mirror what a well-built existing page on this solution already stores
     (the editor's `dw-h*`/`dw-paragraph*` classes). NEVER pass a bare unwrapped string to any of these
     fields.
@@ -283,7 +296,7 @@ never by hand):
   stores the id. Changing which palette a page bands from is an **area-level** change, not a
   row-level one. A given solution may also rename or add schemes — `get_color_schemes` is the
   source of truth; `save_color_schemes` a new one before using it.
-- Typography (`Typography/fonts.json`, default font **Inter**, modular scale 1.333) and
+- Typography (`Typography/<id>.json`: font, base size, scale; read the area's own with `get_typographies`) and
   Buttons (`Buttons/buttons.json` — Shape/border/padding; button *colors* come from the
   scheme, not here) are single objects.
 
@@ -387,8 +400,8 @@ shared rows instead of a long single-column stack.
     [`grid-rows-and-binding.md`](../dw-swift-building/references/grid-rows-and-binding.md).
 16. **A new area MUST get `TypographyId` and `ButtonStyleId` set, to ids this solution actually
     has, or the whole site renders as unstyled 16px Times New Roman** — Swift's heading/body
-    scale is driven by the area's typography CSS variables, so with the setting empty, heading
-    classes (`h1`/`h2`/`display-*`) do nothing and every page looks broken. **Read the ids first:
+    scale is driven by the area's typography CSS variables, so with the setting empty, headings
+    (`h1`–`h6`) fall back to the browser's defaults, and the editor's heading styles (`dw-h1`–`dw-h6`) have no effect and every page looks broken. **Read the ids first:
     `get_typographies` and `get_button_styles`.** Stock Swift ships `fonts` / `buttons`; a
     solution that layers its own theme commonly ships `default` / `default` instead, and writing
     the stock ids there sets ids that resolve to nothing — applying this fix by literal reproduces

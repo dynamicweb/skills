@@ -1,9 +1,15 @@
 # Catalog tuning: facets, sorting, variants, product pages
 
 Step 6 of [dw-swift-migrate-site](../SKILL.md). A first import usually works but does not yet
-feel like a good shop; these are the changes that matter most. The product index and its facets
-are shared by every website on the solution, so ask before changing them, rebuild the product
-index after each change, and check the result on the frontend.
+feel like a good shop; these are the changes that matter most. The product index, its queries and
+facet groups can be used by several websites on the solution. Reuse what fits the new website as
+it is. When it needs something different, never change what another website uses without asking
+(see step 3); make its own instead: a facet group of its own on the shared query (with query
+parameters named so they can't clash with other websites'), or a query of its own when the
+products, conditions or sorting differ. Propose which at the website-proposal checkpoint. Rebuild
+the product index after each change, and check the result on the frontend. A facetable index
+field becomes an automatic filter on every product list that uses the index, next to the facet
+group's own, so leave `facetable` off for a field that is in a facet group.
 
 ## Facets
 
