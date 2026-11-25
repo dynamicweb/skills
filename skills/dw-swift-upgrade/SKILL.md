@@ -9,176 +9,162 @@ description: 'Upgrade a Swift 1 site to Swift 2 as it is: a faithful port of its
 
 # Swift 1 → Swift 2 upgrade
 
-## Tool availability: call `tools/list` before planning
-
-`extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
-`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome` are ordinary MCP
-tools: the add-in declares them on its migration tool class, and that class is marked restricted,
-so they reach an MCP configuration only once that configuration has been granted them. Without
-the grant the names are absent from `tools/list` and a call answers `Access denied ... Required
-permission: <the tool's own>. Allowed permission: none`. Full access on the configuration does
-not cover them: each tool is ticked by name in the configuration's permission editor, and
-`tools/list` carries the seven names right after (measured with and without the grant)
-[mcp 0.6.5-beta]. That is a grant on the solution, not
-a property of the client: Dynamo and an external client alike get the family when the
-configuration they connect with carries it.
-
-So **call `tools/list` first and read the answer**, in Dynamo and outside it:
-
-- The seven names are present: run the skill as written. Nothing below applies.
-- They are absent: name the missing tools and say the fix is to grant the migration tools to the
-  MCP configuration this session connects with (the denial text names that configuration), then
-  call `tools/list` again. Never tell the user the skill cannot run on this client.
-
-While the grant is missing, nothing registered replaces the extraction: no registered tool reads
-another site's pages (`fetch_frontend_page_html` summarises a page of this solution only), so
-there is no source to build from. Only when the user supplies the source content (the page list,
-the copy and the media) can the construction, one part of the work, be done with registered
-tools, slower and per page:
-
-- For `build_pages`: `save_pages`, `save_grid_rows`, `save_paragraphs` and
-  `set_paragraph_item_fields`, reading back with `get_pages_by_area_id` and
-  `get_paragraphs_by_page_id`.
-- For `apply_brand_color_scheme`: `save_color_schemes`, then `save_areas` with
-  `colorSchemeGroupId` and `colorSchemeId`.
-- For `setup_website_chrome`: the chrome the area already has (`get_areas`), and a missing header
-  or footer built with `save_pages` and `save_paragraphs` and wired through `save_areas`.
-- For `import_site_media`: `upload_file`.
-
-That path replaces the construction only, never a decision, and it carries none of the
-`build_pages` guarantees (plan validation, content filled from the extraction, precondition
-checks), so read every page back.
-
 ## MCP preflight
 
-This skill drives the Dynamicweb MCP server — its steps are tool calls, and the MCP tool set plus
-read/write under `Files/` is the whole surface they may use. Verify the tools are available before
-starting. If a step's tool is missing, **stop at that step** and tell the user what is missing and
-which admin screen performs it; do not substitute a guessed HTTP call, a file edit outside
-`Files/`, or SQL. The Management API, the serializer and direct SQL are out-of-product surfaces,
-owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a step here.
+This skill drives the Dynamicweb MCP server. Its steps are tool calls, and the MCP tool set plus
+read/write under `Files/` is the whole surface they may use. Call `tools/list` before planning and
+check the tools each step names below. If a step's tool is missing, **stop at that step** and tell
+the user what is missing and which admin screen performs it; do not substitute a guessed HTTP
+call, a file edit outside `Files/`, or SQL. The Management API, the serializer and direct SQL are
+out-of-product surfaces, owned by [`dw-data-access`](../dw-data-access/SKILL.md), and are never a
+step here.
 
-Use this skill when the user wants to migrate pages from a **Swift 1** (Swift v1) solution to
-**Swift 2** and **keep the layout** — as faithful and structure-preserving as the pipeline
-allows, not a free re-design. The fact that makes this worth a dedicated skill: **Swift 1 and
-Swift 2 are the same grid model** (paragraphs positioned by row + column; the row
-`DefinitionId` set overlaps almost 1:1), so the original layout can carry over instead of
-being re-imagined.
+**Reading the source is a precondition.** The MCP server works on one solution, the target.
 
-This is the faithful sibling of [dw-swift-migrate-site](../dw-swift-migrate-site). That
-skill migrates ANY source into *standard, modern* Swift 2 and **deliberately re-flows content
-into new compositions (not 1:1)**. Choose by intent:
-- "migrate all the pages/content from this site, make it modern" →
-  [dw-swift-migrate-site](../dw-swift-migrate-site).
+- **Source in the same solution** (a Swift 1 website next to the new Swift 2 one): read it with
+  the content tools. Nothing else is needed.
+- **Source on another solution**: the rendered pages have to be read some other way. Check
+  `tools/list` (and the client's own tools) for one that fetches a public URL or drives a
+  browser. `fetch_frontend_page_html` reads pages of this solution only. When nothing reads the
+  source, ask the user for the content (page list, copy, image URLs) or to load the source into
+  this solution, then run the skill on what they give.
+
+## When to use it
+
+Use this skill when the user wants to move pages from a **Swift 1** (Swift v1) website to
+**Swift 2** and **keep the layout**: a faithful, structure-preserving port, not a re-design.
+What makes it worth its own skill: **Swift 1 and Swift 2 use the same grid model** (paragraphs
+placed by row and column, and the row `DefinitionId` sets overlap almost 1:1), so the original
+layout can carry over.
+
+This is the faithful sibling of [dw-swift-migrate-site](../dw-swift-migrate-site). That skill
+moves ANY source into *standard, modern* Swift 2 and **re-flows content into new compositions on
+purpose**. Choose by intent:
+
+- "migrate all the pages from this site, make it modern" → [dw-swift-migrate-site](../dw-swift-migrate-site).
 - "it's a Swift 1 site, port it and **keep the layout / don't redesign / 1:1**" → THIS skill.
-- a single new page with design intent, no migration source → [dw-swift-page-design](../dw-swift-page-design).
+- one new page with design intent, no source → [dw-swift-page-design](../dw-swift-page-design).
 
-**Load [dw-swift-page-blocks](../dw-swift-page-blocks) first** for the target vocabulary.
+**Load [dw-swift-page-blocks](../dw-swift-page-blocks) first** for the target vocabulary. Its
+"Field & template contracts" section and its "Gotchas that bite" list hold the field rules this
+skill relies on: button values as `{"Label","Link","Style"}` JSON, `Template` as the bare file
+name from `get_paragraph_templates`, the `Swift-v2_Poster` `Height` values, the row
+`ContainerWidth` and gap values, and text fields that carry their own HTML. Follow them there;
+they are not repeated here.
 
-## Mechanism — and exactly what you can and cannot steer (read this)
+## What you decide
 
-The MCP server runs against ONE solution (the **target** Swift 2 site); it does **not** read
-the Swift 1 database directly. The Swift 1 source comes in through the same pipeline
-`dw-swift-migrate-site` uses for its content phase: `extract_site_content(sourceUrl)` reads it over `/dwapi` →
-page tree → `Rows` → `Columns` → `Blocks` (each block has a stable id; each row a
-`LayoutHint`). You then author per-page `Plan`s and `build_pages` writes them. Content can
-neither be lost nor invented — a verbatim ledger enforces it, and a failed plan falls back
-loudly to the deterministic mapper.
+You build every page with the standard tools, so every choice is yours: the row `DefinitionId`,
+the row color band, the component and its template, and the value of every field. Nothing picks
+a component by content shape for you, and nothing fills a field you leave out. That is why the
+result can match the source closely, and also why each page must be read back.
 
-What the **Plan actually controls** (verified against the build pipeline — do not promise
-more):
-- **Row layout** — set the Plan row's `DefinitionId` from the source `LayoutHint`. It is
-  honored **as long as every column keeps at least one block**. If a column ends up empty,
-  the build drops it and **re-derives the layout from the real column count** (e.g. a
-  `3Columns` with one empty cell becomes `2Columns`). So: one block per column, no empties,
-  and the layout survives.
-- **Per-row color band** — set the Plan row's `ColorSchemeId`. **You assign this**; the
-  source banding is NOT extracted. Use it to recreate section contrast (hero/`primary`,
-  alternating `light`/`lightgrey2`).
-- **Component choice — only for six block types**: `Swift-v2_Text`, `Swift-v2_Poster`,
-  `Swift-v2_Image`, `Swift-v2_Card`, `Swift-v2_Slider`, `Swift-v2_Accordion`. For these, the
-  Plan's `Component` (+ `Variant`) is honored. **For every other block, omit `Component` —
-  the deterministic mapper picks the v2 component by content shape, and you cannot override
-  it from the Plan.**
-- **Dispositions** — each block is `used`, `merged-into:<id>`, or `dropped:<reason>` (reason ∈
-  chrome|breadcrumb|empty|duplicate-nav|product-list|product-detail|ecommerce|out-of-scope).
-  For a faithful port, merge ONLY true noise — keep each real block as its own paragraph.
+## The block list
 
-So "faithful" here means: **layout preserved + banding assigned + every block kept in place +
-the six steerable components pinned + the rest mapped faithfully-by-shape.** It is NOT
-byte-identical, and for non-steerable blocks the component is the mapper's choice, not yours.
-Say so.
+A **block** is a piece of content as a visitor reads it: a hero with its heading and button, a
+quote, a row of three cards. It is not a page-builder element; one block can span several
+paragraphs, and one paragraph can hold several blocks.
 
-## Mapping table (Swift 1 → Swift 2), tiered by what you can steer
+- **Survey:** for each source page, list every block in reading order, with its row and column,
+  its text, images and links.
+- **Build:** record where each block ended up: the component that holds it, `merged` into
+  another block (name it), or `dropped` with a reason the user approved at the proposal.
+- **Read back:** after building a page, read it with `get_paragraphs_by_page_id` and check it
+  against the list. Every block marked used is there, with its text, images and links, and no
+  field is empty that the source filled.
 
-**Tier 1 — pin in the Plan** (set `Component`, it is honored):
+The block list is the proof that nothing was lost. Keep it per page until the final summary.
 
-| Swift 1 | Plan `Component` | Variant |
-|---|---|---|
-| `Swift_Text`, `Swift_TextAdvanced` | `Swift-v2_Text` | TextLeft/Center/Right |
-| `Swift_Poster`, `Swift_TextBanner` | `Swift-v2_Poster` | TextMiddleLeft / TextBottomLeft |
-| `Swift_Image` | `Swift-v2_Image` | Plain |
-| `Swift_Slider`, `Swift_Carousel` (+ items) | `Swift-v2_Slider` | (from children) |
-| `Swift_Accordion` (+ items) | `Swift-v2_Accordion` | Flush |
+## Mapping Swift 1 item types to Swift 2
 
-**Tier 2 — omit `Component`; the mapper maps by content shape** (you can't pin the exact
-type, but it lands faithfully for normal content): `Swift_Feature`, `Swift_Button`,
-`Swift_TextAndImage`, `Swift_Blockquote`, `Swift_Employee`, `Swift_Logo`,
-`Swift_VideoPlayer`/`VideoPoster`, `Swift_SectionHeader` (→ centered text), navigation/
-breadcrumb chrome. State in the summary that these were mapper-chosen, not Plan-pinned.
+Do not assume a mapping. Work it out from this solution and propose it.
 
-**Tier 3 — side-list and skip from the automated rebuild** (no clean target; `build_pages`
-creates fresh pages and cannot carry these over verbatim): `Swift_MegaMenu` (no v2
-equivalent), the Article/Blog subsystem (`ArticleHeader`/`ArticleList` — v2 uses a different
-`PostList` model), product list/detail, e-commerce, modules/apps (`eCom_*`, `App`, Cart/
-Checkout), and RawHTML / custom `.cshtml`. These need a human; never guess or silently drop
-them.
+1. **Read the source types.** `get_item_types`, then `get_item_type_fields` for each Swift 1 item
+   type the source pages use. Read real values with `get_paragraph_item_field_values` on a few
+   paragraphs of each type.
+2. **Read the target types the same way**, and `get_paragraph_templates` for each Swift 2
+   component you consider.
+3. **Compare how each renders.** Look at the source block on the rendered page and at how the
+   Swift 2 component lays out the same fields. Map by what the visitor sees, not by name.
+4. **Propose the mapping** at the proposal checkpoint: one line per Swift 1 type with its Swift 2
+   component, template and field mapping, plus any field that has no home.
 
-Row `DefinitionId`s map near 1:1 (`1Column`, `2Columns`, `2Columns_4-8/8-4/3-9/9-3`,
-`3/4/6Columns`, `*Flex`). `5ColumnsFlex` has no v2 twin → nearest (`6ColumnsFlex`) or split;
-flag it.
+What one test found, as a starting point only:
+
+- Same-named pairs mostly carry over (`Swift_Text` → `Swift-v2_Text`, `Swift_Poster` →
+  `Swift-v2_Poster`, `Swift_Image`, `Swift_Slider`, `Swift_Accordion`). Still check the fields.
+- `Swift_TextAdvanced`, `Swift_SectionHeader`, `Swift_ArticleHeader`, `Swift_MegaMenu` and
+  `Swift_Article` have no Swift 2 type of the same name. Choose a target by how the block
+  renders, and say what is lost.
+- Swift 1 option values (poster height, layout, button style, row width, row spacing, image
+  ratio) have no stated Swift 2 equivalent. Map each one by its rendered effect, against the
+  Swift 2 values in dw-swift-page-blocks, and list your choice in the proposal. Do not present it
+  as a known table.
+
+Row `DefinitionId`s map near 1:1 (`1Column`, `2Columns`, the `2Columns_*` splits, `3/4/6Columns`,
+the `*Flex` rows). `5ColumnsFlex` has no Swift 2 twin: take the nearest (`6ColumnsFlex`) or split
+the row, and flag it. Check the real set with `get_row_definitions`.
 
 ## Flow
 
-1. **Confirm once.** State the source + target and that it is a **faithful,
-   layout-preserving** Swift 1 → Swift 2 port. Once the user agrees, run to completion — one
-   final summary, no per-batch stop.
-2. **Target precondition.** Build into a real Swift 2 area (`save_areas` with the v2 master
-   `LayoutTemplate`, `Active` + `Published`); confirm the design folder name from
-   `get_layouts`.
-3. **Discover target vocabulary once.** `get_row_definitions`, `get_item_types`,
+1. **Target precondition.** Build into a real Swift 2 website (`save_areas` with the Swift 2
+   master `LayoutTemplate`, `Active` and `Published`); confirm the design folder name from
+   `get_layouts`. Discover the target vocabulary once: `get_row_definitions`, `get_item_types`,
    `get_paragraph_templates`, `get_layout_containers`.
-4. **Extract the Swift 1 source.** `extract_site_content(sourceUrl, [auth])` → tree + brand +
-   media + warnings. Note `SourceHost`.
-5. **Brand & chrome before pages.** `apply_brand_color_scheme(targetAreaId, sourceHost)`, then
-   `setup_website_chrome(targetAreaId, sourceHost)`; carry Master/area settings by meaning
-   (`get_item_type_fields` on the area item type). `import_site_media(sourceHost)`.
-6. **Port pages in batches — faithful Plans.** Per page: `get_extracted_page` → author a Plan
-   that (a) sets each row's `DefinitionId` from its `LayoutHint`, (b) keeps one real block per
-   column (no empties → layout survives), (c) pins `Component`+`Variant` for the Tier-1 types
-   and omits it for the rest, (d) assigns each row a `ColorSchemeId` for banding, (e) marks
-   every block `used`/`merged-into`/`dropped:<reason>` — dropping only chrome/breadcrumb/
-   empty. `build_pages(targetAreaId, [specs], sourceHost)`; repeat while `HasMore`, re-send
-   only failures.
-7. **Verify + one final summary.** Confirm every extracted block is accounted for (the
-   validator enforces it). Side-list explicitly: Tier-2 blocks (mapper-chosen, name the
-   component it picked if surprising), every Tier-3 item skipped for a human, any row whose
-   layout re-derived because a column emptied, the `5ColumnsFlex` nearest-pick, and any page
-   whose plan fell back to the faithful mapper.
+2. **Survey the source (read only).**
+   - Same solution: `get_pages_by_area_id` for the tree, then per page
+     `get_grid_rows_by_page_id`, `get_paragraphs_by_page_id` and
+     `get_paragraph_item_field_values`. Inactive rows are listed with `active=false`; leave them
+     out. A paragraph past its `validTo` still reads `active=true` but is not shown, so compare
+     the dates and leave expired ones out too.
+   - Another solution: read the rendered pages with the fetch or browser tool from the preflight.
+   - Note the brand (colors, fonts, button shapes), the header and footer, the media, and every
+     internal link and product-group reference. Write the block list.
+3. **Proposal checkpoint: confirm once.** State the source and target, that this is a
+   **faithful, layout-preserving** port, the item-type mapping, the option-value choices, every
+   block you plan to merge or drop and why, and what goes to a human. Once the user agrees, run
+   to completion: one final summary, no stop per batch.
+4. **Brand first.** Read the target's current styles, then `save_color_schemes`,
+   `save_typographies` and `save_button_styles` (style writes replace the whole object; see
+   dw-swift-page-blocks). Assign the scheme to the website with `save_areas`
+   (`colorSchemeGroupId`, `colorSchemeId`).
+5. **Media.** `upload_file_from_url` for each image, fetching the original file, not a resized
+   rendition. Keep a map from source URL to the new `/Files/...` path.
+6. **Header and footer.** Build a header page and a footer page with `save_pages` and
+   `save_paragraphs` (or `copy_page` from a working Swift 2 header and footer), placed under a
+   parent page, not at the website root. Link them in the website's `Swift-v2_Master` fields
+   `HeaderDesktop`, `HeaderMobile`, `FooterDesktop` and `FooterMobile` with
+   `set_item_field_values`. Carry other master settings by meaning (`get_item_type_fields` on
+   the website's item type).
+7. **Shop pages (when the source is a shop).** Build or `copy_page` the catalog pages: the shop
+   page, product list and detail, the `ProductSliderService` and `VariantSelectorService` pages,
+   cart and checkout. Then check every setting on the copies for page ids or shop ids that still
+   point at the source website, and replace them.
+8. **Port pages in batches.** Per page: `save_pages`, then `save_grid_rows` with each row's
+   `DefinitionId` and `ColorSchemeId`, then `save_paragraphs` and `set_paragraph_item_fields`
+   following the mapping. Keep each real block as its own paragraph in its own column. Write
+   internal links as `Default.aspx?ID=<new page id>` and product-group references as the new
+   group ids, using your source-to-new id maps. Record each block's outcome in the block list.
+9. **Read back every page.** `get_paragraphs_by_page_id` against the block list,
+   `inspect_page_render` for what renders, and `validate_page_content` for broken fields. Fix and
+   read again until the page matches.
+10. **One final summary.** Pages built, each block's outcome, the item-type and option-value
+    mappings used, the `5ColumnsFlex` picks, links or ids that could not be resolved, and
+    everything left for a human.
 
 ## Honesty floor
 
-- "Faithful" ≠ "identical": extraction is content-shape based, the Plan only steers six
-  component types, and layout survives only when columns stay populated. State what was
-  preserved vs mapper-chosen vs approximated.
-- Account for EVERY block in `Dispositions`; drops only for the closed reason set. Never
-  silently re-flow or drop.
-- Tier-3 (article/product/commerce/module/custom/MegaMenu): side-listed and skipped, never
-  guessed or faked.
+- "Faithful" is not "identical". Say what was preserved, what was mapped to a different
+  component, and what was approximated (option values, types with no same-named twin).
+- Account for EVERY block in the block list. Drop only for a reason the user approved. Never
+  silently re-flow or drop content.
+- A Swift 2 page that reads back with a missing block or an empty field is not done.
+- Raw HTML, custom `.cshtml` and modules or apps outside the shop pages go on a side list for a
+  human. Never guess or fake them.
 
 ## Out of scope
 
-The article/blog subsystem, product list/detail and e-commerce, modules/apps, custom HTML/
-`.cshtml`, MegaMenu, and in-place platform upgrades (see [dw-setup-upgrade](../dw-setup-upgrade)).
-Pixel-identical reproduction is not achievable through extraction — faithful structure +
-banding + content is the goal.
+Custom HTML and `.cshtml`, modules and apps beyond the standard shop pages, product and catalog
+data (see [dw-swift-migrate-site](../dw-swift-migrate-site) for a catalog import), and in-place
+platform upgrades (see [dw-setup-upgrade](../dw-setup-upgrade)). Pixel-identical reproduction is
+not the goal; faithful structure, banding and content are.

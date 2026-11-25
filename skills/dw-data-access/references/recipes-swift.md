@@ -172,9 +172,8 @@ UPDATE Area SET
 WHERE AreaId = <area>;
 ```
 
-- **Why the higher surfaces do not cover it**: no MCP tool is known to write these four `Area` columns.
-- **Local installs only**: a hosted install has no SQL surface and no known write path for the
-  columns, so an online build asks the user.
+- **Why the higher surfaces do not cover it**: they do now. `save_areas` writes all four columns, so use it; this SQL is only for an install without the MCP server.
+- **Local installs only**: a hosted install has no SQL surface; use `save_areas` there.
 - **The debt it owes**: a host restart ("Restart the host to drop cached composition", above), so the
   resolved style URLs reload.
 

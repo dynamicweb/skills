@@ -27,10 +27,12 @@ page; reading those is faster and more accurate than parsing HTML. Note the sour
 languages, and whether listed prices include VAT.
 
 A source that runs on Dynamicweb (image URLs through `/Admin/Public/GetImage.ashx`, links like
-`Default.aspx?ID=`, media under `/Files/Images/`) serves its data as JSON under `/dwapi` and lists
-its own routes at `/dwapi/api.json`. Read that file and use its content and ecommerce routes
-(pages, paragraphs, groups, products, a product's related products) instead of crawling pages;
-keep the crawl delay. A database export through the `dw-pim-migrate-dw9` skill is the other
+`Default.aspx?ID=`, media under `/Files/Images/`) serves its catalog as JSON under
+`/dwapi/ecommerce` and lists its own routes at `/dwapi/api.json`. Read its products from there
+instead of crawling product pages, keeping the crawl delay: `products/search` with `RepositoryName`,
+`QueryName` and the query's own group parameter (`GroupID=…`) filters by group, and one search
+response holds fields, images and related products. Read its content pages from the rendered
+pages, not from `/dwapi` (see the content rebuild). A database export through the `dw-pim-migrate-dw9` skill is the other
 option when the user can provide one.
 
 When the intake scope is a subset, propose categories that together cover every product shape
@@ -47,8 +49,12 @@ runtime the agent can run), keeping the crawl delay:
 - Save raw responses as JSON Lines, one record per line, so a stopped crawl continues and parsing
   can be rerun without crawling again
 - Keep a crawl log of the source URL behind every record, so any value traces back to its page
-- Download images once and size them by use: scale down to 2× the widest width they're shown at,
-  at most 2560 px on the long edge; never upscale (an original smaller than that is kept as it is).
+- Download each image once, at the largest size the source offers, and keep it as the original:
+  Dynamicweb's image handler makes the sizes each page needs. Never upscale. Side-list images
+  (product and content) whose best original is smaller than the width they are shown at, so the
+  owner can supply larger ones. When the build uploads images with `upload_file_from_url`, record
+  each image's original URL here instead of downloading it: the server fetches it once. Download
+  images only for a bulk upload with the dw CLI.
   Keep transparency (PNG/WebP)
 - Keep names, descriptions, and specifications exactly as the source has them
 
@@ -68,6 +74,18 @@ proposing anything, and reuse what fits. Then propose:
 - Variant groups for the specifications the source uses to pick a variant (size, length, color),
   with one option per distinct value; a specification that varies per variant but never picks
   one stays a category field
+- Product images as product assets (the asset category for images), so they can be managed in the
+  Products area, are inherited by variants, and are included in the solution's product feeds and
+  its API (`/dwapi`). When the source's files are named after the product number, let the asset
+  category assign them by file-name pattern. Use the shop's image pattern only when the user says
+  images are delivered outside the Products area by a naming convention, and check that they show
+  where they're needed (product list, feeds and API) before relying on it. For the attach calls
+  and accepted formats, see the `dw-commerce-catalog` skill, "Product images via the Management
+  API", when it is installed.
+- A product family where some members exist in one variant only: give them the variant value as a
+  category field too, or make them one-variant masters, so filters find them. When the migration
+  creates master products the source didn't have, don't show the made-up master number on list
+  cards
 - One clean product group tree: merge parallel source categories (the same category listed under
   two audiences, a child named like its parent) and remap products to the merged groups
 
@@ -182,6 +200,10 @@ A success response or a Data Integration row count is not proof. For each import
    hide a failed import
 4. Time the product list and a product page, with a warm cache, before and after the import.
    Stop and report if a page gets slower than 2 s or twice as slow as before.
+
+On a new website the storefront doesn't exist yet at the import: run checks 1–2 at the import,
+and checks 3–4 in step 5 as soon as the shop pages exist. With no "before", apply only the 2 s
+limit.
 
 At the checkpoint, report product, variant, price, and image counts in the solution against the
 scraped counts, with links to the checked product pages.

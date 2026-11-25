@@ -14,6 +14,12 @@
    "platform": "any",
    "toolCount": 11,
    "note": "tools no captured tools/list carries: neither the 0.4.4 nor the 0.6.0 capture lists them. They are real MCP tools: the 0.6.0 add-in declares all eleven with the ordinary tool attribute on its migration tool class, and that class alone carries a class-level restriction marker, so a configuration without the grant neither lists them nor may call them. A call answers 'Access denied. MCP configuration <name> is not allowed to call tool <tool>. Required permission: Read. Allowed permission: none.' (measured 2026-09-14 on a 604-tool configuration). The condition is the solution-side grant, not the client: a skill citing one says so, tells the client to check tools/list, and names the registered replacement for the construction or says plainly that nothing replaces it."
+  },
+  "mcp-later-additions": {
+   "mcpVersion": "0.6.1 and later",
+   "platform": "Dynamicweb 10.28.x",
+   "toolCount": 3,
+   "note": "tools added to Truvio.Commerce.MCP after the 0.6.0 capture and present in the released 0.6.6-BETA tool set: save_color_scheme_custom_colors (since 0.6.1), inspect_page_render (since 0.6.3), upload_file_from_url (since 0.6.4). Registered by name only, read from the add-in's tool names and its generated TOOLS.md at the 0.6.6 release; not a new tools/list capture. A server older than the version named is missing the tool."
   }
  },
  "notTools": [
@@ -2733,6 +2739,12 @@
     "not-on-endpoint"
    ]
   },
+  "inspect_page_render": {
+   "mcpVersion": "0.6.3",
+   "source": [
+    "mcp-later-additions"
+   ]
+  },
   "is_color_scheme_group_in_use": {
    "mcpVersion": "0.6.0",
    "source": [
@@ -3073,6 +3085,12 @@
    "mcpVersion": "0.6.0",
    "source": [
     "mcp-0.6.0-fullaccess"
+   ]
+  },
+  "save_color_scheme_custom_colors": {
+   "mcpVersion": "0.6.1",
+   "source": [
+    "mcp-later-additions"
    ]
   },
   "save_color_schemes": {
@@ -3745,6 +3763,12 @@
    "mcpVersion": "0.6.0",
    "source": [
     "mcp-0.6.0-fullaccess"
+   ]
+  },
+  "upload_file_from_url": {
+   "mcpVersion": "0.6.4",
+   "source": [
+    "mcp-later-additions"
    ]
   },
   "upload_product_images": {

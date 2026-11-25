@@ -230,23 +230,14 @@ The user points at a real page ("recreate go-pakgroup.com's front page here").
 
 ### Header, footer and un-reproducible modules
 
-- **Header/footer:** `setup_website_chrome(targetAreaId)` creates the
-  hidden `Header / Footer` folder, a `Swift-v2_Header` page (Logo + horizontal Navigation) and
-  a `Swift-v2_Footer` page (Logo + vertical Navigation + copyright), and wires the website's
-  `HeaderDesktop`/`HeaderMobile`/`FooterDesktop`/`FooterMobile` Master link fields. It is
-  idempotent and `sourceHost` is **optional**, so it works for an original site with no
-  migration involved. It requires the area's Swift v2 master `ItemType` (provisioned by
-  `save_areas`). **It is a restricted tool**: it belongs to the migration tool family, which Full
-  access does not cover. `tools/list` on `/admin/mcp` carries it only after the MCP configuration
-  has been granted it by name in the permission editor; without that grant it is absent and a call
-  answers `Access denied ... Required permission: Create. Allowed permission: none`.
-  Measured with and without the grant [mcp 0.6.5-beta].
-  When it is absent, read the chrome the area already has: `get_areas` for the master's
+- **Header/footer:** read the chrome the area already has: `get_areas` for the master's
   `HeaderDesktop` / `HeaderMobile` / `FooterDesktop` / `FooterMobile` link fields, then
-  `get_pages_by_area_id` and `get_paragraphs_by_page_id` on the pages those fields point at.
-  Reuse that chrome; build a missing one with `save_pages` + `save_paragraphs` and wire the four
-  Master link fields through `save_areas`. Or ask the user to grant the tool to the MCP
-  configuration this session connects with, then call `tools/list` again.
+  `get_pages_by_area_id` and `get_paragraphs_by_page_id` on the pages those fields point at, and
+  reuse it. Build a missing one as a page under a parent page (not at the website's root) with
+  `save_pages`, `save_grid_rows` and `save_paragraphs` (a `Swift-v2_Header` page with Logo and a
+  horizontal Navigation, a `Swift-v2_Footer` page with Logo, a vertical Navigation and the
+  copyright), or `copy_page` it from another Swift 2 website, and link it in the four Master
+  fields with `set_item_field_values`.
 - **Third-party embeds are not content.** Source pages carry blocks that are really external
   services: an unknown custom element (`<f24-form>`, `<x-*>`), a field whose entire value is a
   `<script>`, an iframe to a non-media host, a loader placeholder. Spot these at the
@@ -367,8 +358,11 @@ it, and re-fetch.
 Also check the page is not merely *valid* but *designed* — these render fine structurally yet
 look broken/boring, and each maps to a contract in `dw-swift-page-blocks`:
 - **Headings the same size as body, or a title run into the next text** ("Free
-  deliveryFree shipping…") → that field holds a bare string; rewrite it as `<h_ class="h1|h2|
-  h3 mb-2">…</h_>`.
+  deliveryFree shipping…") → that field holds a bare string; rewrite it as the editor would:
+  choose the heading level the role needs (H1–H6 in the element menu) and a style in the style
+  menu (`dw-h1`–`dw-h6`), normally the matching one (`<h2 class="dw-h2">`), or another level's
+  when it should look different. The size comes from the typography, never from other classes in
+  the field.
 - **A flat color block where a hero should be, or text-only cards** → the `Image` field is
   blank; assign a media file that fits the section, or switch to an image-free component and
   list the section as needing an image.

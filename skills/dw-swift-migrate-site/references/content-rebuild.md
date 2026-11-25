@@ -3,39 +3,40 @@
 The content phase of [dw-swift-migrate-site](../SKILL.md) (step 5). It reads the source site's
 pages and rebuilds them here in Swift 2's own components: a modern rebuild, never a 1:1 copy of
 the old design. The source can be any website: a Dynamicweb solution (Swift v1, Rapido, Espresso,
-custom, read over `/dwapi`) or any other site.
+custom) or any other site.
 
 ## Contents
 
-- [Check the migration tools first](#check-the-migration-tools-first)
-- [Building without the migration tools](#building-without-the-migration-tools)
+- [Reading the source](#reading-the-source)
+- [The block list](#the-block-list)
+- [Building a page with the standard tools](#building-a-page-with-the-standard-tools)
 - [The dividing line](#the-dividing-line)
 - [Scope of this phase](#scope-of-this-phase)
-- [The per-page contract: a content-free layout plan](#the-per-page-contract-a-content-free-layout-plan)
 - [Flow](#flow)
 - [Design guide: choosing components and variants](#design-guide-choosing-components-and-variants)
+- [Recipes](#recipes)
 - [How a well-built Swift 2 page reads](#how-a-well-built-swift-2-page-reads)
 - [The product catalog shell](#the-product-catalog-shell)
 - [Honesty floor](#honesty-floor)
 
-## Check the migration tools first
+The build runs on the standard MCP tools, one page at a time. The tools read, check and set up;
+every layout decision is yours, made from this file and the field rules in
+[dw-swift-page-blocks](../../dw-swift-page-blocks/SKILL.md) ("Field & template contracts").
 
-The MCP server has a family of migration tools that read a source site and build pages from it:
-`extract_site_content`, `get_extracted_site`, `get_extracted_page`, `build_pages`,
-`import_site_media`, `apply_brand_color_scheme` and `setup_website_chrome`. The family is
-restricted: it reaches an MCP configuration only once an administrator grants each tool by name
-in the configuration's permission editor; Full access does not cover it. Without the grant the
-names are absent from the tool list and a call answers `Access denied ... Required permission:
-<the tool's own>. Allowed permission: none`; with it the seven names are listed.
-Measured with and without the grant [mcp 0.6.5-beta].
+Read the content of a Dynamicweb source on another solution from its rendered pages, like any
+other site: its `/dwapi` content routes leave out blocks and return ones that aren't shown.
+Rebuild blocks whose fields hold hand-written HTML as components; never paste the HTML into the
+new website. Map the source's item types to Swift 2 components, and propose the mapping at the
+website-proposal checkpoint.
 
-So **list the tools first**:
+## Reading the source
 
-- The seven are present: run this phase as written.
-- They are absent: name the missing tools, tell the user the fix is to grant the migration tools
-  to the MCP configuration this session connects with, and list the tools again after they have.
-  The family ships inside the MCP add-in itself, so an AppStore search for a separate "migration"
-  app finds nothing and proves nothing.
+Read each page with your own web fetch or browser, one URL at a time, keeping the crawl delay.
+Where the source is a website in the **same** solution, read it with the content tools instead
+(`get_pages_by_area_id`, `get_grid_rows_by_page_id`, `get_paragraphs_by_page_id`,
+`get_paragraph_item_field_values`); products, prices and files are already there. Two traps on
+that route: a paragraph past its `validTo` still reads `active: true` but is not shown, so compare
+the dates; and a row with `active: false` is not shown, nor are its paragraphs.
 
 **Content inherits the limits of the reader that produced it.** A reader that executes no
 JavaScript sees only a page's server-rendered shell: a client-rendered product grid is absent,
@@ -45,12 +46,32 @@ executes JavaScript has rendered it and counted the product tiles or main conten
 next to each such finding which reader produced it, and never let an unconfirmed finding set
 scope.
 
-## Building without the migration tools
+When reading a page by hand, check for:
 
-Use this path while the grant is missing, and when the flow below says not to run the
-extraction. The content scraped in step 2 is the source, and the construction runs on the ordinary
-page tools, one page at a time. It replaces the construction only, never a design decision, and
-none of the page builder's checks run, so read every page back.
+- images loaded late: the real source sits in `data-src` or `srcset`, and size suffixes in file
+  names point at a smaller copy than the original
+- photos set as CSS backgrounds, which no `<img>` shows
+- content in tabs, accordions and sliders that is hidden until clicked
+- counters that show `0` until animated; the value is in a data attribute
+- text in plain `div` elements instead of headings and paragraphs, and page-builder wrappers
+  around the real content
+- scroll animations that keep content invisible in screenshots until scrolled into view
+- fields holding hand-written HTML (`<style>`, `<script>`, `<iframe>`, images as data URIs)
+
+## The block list
+
+In the survey, list every block on each source page by what it is and what it contains. A block is
+a piece of content as a visitor reads it, not an element of the source's page builder: when the
+builder splits one sentence, list or heading with its text across several elements, list them as
+one block. When building, record where each block ended up: which component or components,
+merged into another block, or dropped for one of the approved reasons (`chrome`, `breadcrumb`,
+`empty`, `duplicate-nav`, `product-list`, `product-detail`, `ecommerce`, `out-of-scope`). After
+building a page, read it back with `get_paragraphs_by_page_id` and check it against the list:
+every block that was used is there with its text, images and links, and no field is empty.
+
+Keep the list in `RUN-STATE.md`, so a stopped run knows which blocks are done.
+
+## Building a page with the standard tools
 
 **Create order for every component**, each call carrying its item type:
 
@@ -63,7 +84,10 @@ none of the page builder's checks run, so read every page back.
    once from the layout's containers (the one marked default, `Grid` on Swift 2) and pass it
    verbatim. A row with an empty or unknown container saves and reads back, but its paragraphs
    never render and the page answers 200 with an empty `<main>`. Header and footer pages render
-   through the same grid, so each needs its own row too.
+   through the same grid, so each needs its own row too. Check the row's phone layout
+   (`MobileLayout`): columns that should stack on a phone are `12` each. Keep the column gap
+   (`GapX`) at 3 or less on rows that stack: at 5, whole pages rendered wider than a 390 px phone
+   and scrolled sideways.
 3. Create the paragraph with `save_paragraphs`: id 0, the page, the component's item type, the
    variant as its template, the grid row from step 2, and the column. **One paragraph per grid
    column:** a second paragraph in the same column saves, reads back, and never renders; two
@@ -72,144 +96,94 @@ none of the page builder's checks run, so read every page back.
    call** (`FirstButton: ""` and `SecondButton: ""` on a Text paragraph). A new paragraph gets
    text defaults in its button fields, the button editor fails on them, and the page renders an
    error block where the copy should be while still answering 200. Give a button a value only as
-   a `{"Label":…,"Link":…,"Style":…}` object.
+   a `{"Label":…,"Link":…,"LinkType":…,"Style":…}` object. The values each field takes (buttons,
+   `Template` as a bare file name, the `Poster` heights, the row's `ContainerWidth`) are in
+   [dw-swift-page-blocks](../../dw-swift-page-blocks/SKILL.md); read them before the first page.
 
 **Prove each page on the rendered frontend:** a distinctive string from the copy you wrote is
-present, and no error markup is.
-
-The other migration tools fall back the same way:
-
-- **Media:** upload the images to `/Files/Images/<source site>/` (the dw CLI for many files).
-- **Color scheme:** create the scheme group and its schemes from the brand colors, then assign
-  the group and scheme to the website.
-- **Header and footer:** with the migration tools granted, the chrome tool needs no extraction
-  (give it the logo file and the menu links). Without them, use what the website already has, and
-  build a missing header or footer as a page with one row and one paragraph per column, wired to
-  the website's settings.
+present, and no error markup is. Then run `inspect_page_render` and `validate_page_content`, and
+check it against the block list.
 
 ## The dividing line
 
-- **The build owns content and structure.** It fills every word of copy, every image and every
-  link from the source; validates the plan exactly (every block accounted for, drops only for
-  approved reasons); snaps every component, variant and row definition to what is installed;
-  checks the preconditions (Swift 2 installed, v2 design, published website); imports media,
-  remaps links, scaffolds the chrome, and sorts the front page. Content cannot be lost or invented.
-- **You own arrangement.** Which block goes in which row and column, as which component and
-  variant, with which color band, what merges into fewer and richer rows, and what is honestly
-  dropped (chrome, breadcrumbs, empties). That design judgment is where the quality lives.
+- **The tools own the mechanics.** They create, read back, check and render; they never decide a
+  layout.
+- **You own content and arrangement.** Every word, image and link comes from the source; which
+  block goes in which row and column, as which component and variant, with which color band,
+  what merges into fewer and richer rows, and what is honestly dropped (chrome, breadcrumbs,
+  empties). That design judgment is where the quality lives.
 
 ## Scope of this phase
 
 - **In:** content pages (text, media, structure, internal links) and the brand (logo, favicon,
-  colors as one color scheme).
-- **Product list and product detail pages:** never rebuilt as content. Identify them from the
-  extracted page's source item type (a `*ProductList*` or `*ProductDetails*` type) or, on another
-  platform, from what the page shows, and side-list them. Swift 2's standard catalog shell
-  replaces them (see [The product catalog shell](#the-product-catalog-shell)).
-- **Out:** unpublished pages (the source cannot return them; see the extraction warnings).
-
-## The per-page contract: a content-free layout plan
-
-With the migration tools, each extracted page comes back as `Rows` → `Columns` → `Blocks`, each
-block with a stable `Id`. Read each block's `Title`/`Texts`/`Images`/`Links`/`Children`/`Options`
-to understand what it is, but the page build spec carries **no text**: only `SourcePageId` (a real
-id from the extraction, never an invented page) and a `Plan`:
-
-```jsonc
-{
-  "Rows": [
-    { "DefinitionId": "2Columns_8-4",
-      "Columns": [
-        { "Blocks": [ { "BlockId": "4711", "Component": "Swift-v2_Text" } ] },
-        { "Blocks": [ { "BlockId": "4712", "Component": "Swift-v2_Image", "Variant": "Plain" } ] }
-      ] }
-  ],
-  "Dispositions": {           // EVERY extracted block id must appear
-    "4710": "dropped:breadcrumb",
-    "4711": "used",
-    "4712": "used",
-    "4713": "merged-into:4711"
-  }
-}
-```
-
-- `used` blocks appear exactly once in `Rows`; `merged-into:<id>` blocks render as their own
-  paragraph next to the target (grouping into fewer, richer rows, never concatenation). Drops
-  only from: `chrome | breadcrumb | empty | duplicate-nav | product-list | product-detail |
-  ecommerce | out-of-scope`.
-- Omit `Component` to let the deterministic mapper choose for that block (do this for
-  product-group showcases and raw-HTML blocks). Unknown components fall back to the mapper.
-- A failed plan rebuilds that page faithfully and flags it, per page, never aborting the batch.
-- Parent, menu visibility and name come from the extraction unless the spec gives them; what
-  the spec gives wins (parent -1 puts a page at the top level). Order and front page always come
-  from the extraction.
-- A page that is already built is skipped. To redo its layout, send its spec again with a new
-  plan and `Rebuild`: its content is replaced and the page keeps its id and URL.
-
-Without the migration tools, make the same decisions per block and record them in `RUN-STATE.md`
-the same way, so every source block is accounted for.
+  colors as one color scheme, typography).
+- **Product list and product detail pages:** never rebuilt as content. Identify them from what the
+  page shows (or, on a Dynamicweb source, a `*ProductList*` or `*ProductDetails*` item type) and
+  side-list them. Swift 2's standard catalog shell replaces them (see
+  [The product catalog shell](#the-product-catalog-shell)).
+- **Out:** unpublished pages, which the source does not return.
 
 ## Flow
 
-1. **Extract.** Run the site extraction with the source URL (and credentials when the source
-   needs them). It returns the page tree, brand, media count, and warnings. Dynamicweb sources are
-   read over `/dwapi`; anything else falls back to generic HTML extraction, and the warnings say
-   which mode ran (treat HTML-mode trees with extra scepticism). Note the source host and report
-   the warnings: an unauthenticated read misses unpublished pages, so every count is a floor. A
-   prior extraction can be re-read without crawling again. Before building from an extraction or
-   crawl, compare 3–5 of its pages with the same pages rendered in a browser, late-loading blocks
-   included (tabs, accordions, sliders, product grids), and fix the gaps before building.
-   **Run the extraction only when the user confirms the source's owner accepts its load.** Both
-   modes read the source 6 requests at a time without reading `robots.txt`, and HTML mode crawls
-   up to 120 pages [mcp 0.6.1-beta], so it cannot keep the crawl delay, the
-   one-request-per-second default, or a scope of a few pages. That fits a solution the customer
-   owns and has agreed to; for any other source, build from the files of step 2 as described in
-   [Building without the migration tools](#building-without-the-migration-tools).
+1. **Read.** Read every page in scope as described in [Reading the source](#reading-the-source),
+   and write the block list. Before building, compare 3–5 pages as read with the same pages
+   rendered in a browser, late-loading blocks included, and fix the gaps.
 2. **Target website.** Build into the website agreed at intake. A new website uses the Swift 2
    master layout (read the real design folder name from the solution's layouts if it isn't
-   `Swift-v2`), and is active and published. Decide deliberately whether child URLs ignore the
-   website's URL name: off puts every page at `/<website url name>/<page>`, on puts it at
-   `/<page>`, the usual shape for a single storefront. Derive every internal link and nav target
-   from that choice.
+   `Swift-v2`), and is active and published. Don't derive the website's URL prefix from its URL
+   name. Measure it once on a page that certainly exists, and take every documented URL and verify
+   step from that measurement (`dw-swift-building`, "Measure the storefront prefix once per
+   host"). Internal links and navigation use page ids (`Default.aspx?ID=<id>`), so they don't
+   depend on the prefix.
 3. **Brand and website settings, before pages.** The website settings live on the website's
-   settings item. List that item type's real fields and fill them from the extracted brand and
-   settings by meaning: site name, OG image, privacy and cookie links (remap
-   `Default.aspx?ID=<sourceId>` first), cookie-banner layout. Skip and side-list analytics ids,
-   verification tokens, social handles, ERP settings, and custom head includes. Then:
-   - Create and apply the branded color scheme from the captured palette with the migration tool
-     built for it. Treat the created schemes as a starting point and adjust them to the brand
-     with `save_color_schemes`. Don't run the tool again after adjusting: it overwrites the group.
-     Take the brand's colours from its brand guide if there is one, and from the logo. After
-     adjusting, check that every text and button colour pair reaches at least 4.5:1 contrast.
-   - Build the header and footer (desktop and phone) with the chrome tool, and the product
-     catalog shell when the catalog is in scope. Without a plan it builds the header and footer
-     the original site has: its rows and columns, with its logo, menu, search, account and cart
-     as the Swift 2 components; Swift 2 has no mega menu, so one becomes the menu's dropdown, and
-     footer menus are left out because their links point outside the migration. When the
-     original's header or footer does not fit the rebuilt site (a shop that needs a product-group
-     menu or a cart, a phone header), pass a plan for it in the
-     same format as the page plans; a slot can name just a component, such as the logo, menu,
-     search or mini cart, with its settings. Running it again with a plan replaces that header or
-     footer. Without an original header or footer and without a plan it builds the standard one,
-     and it works without an extraction when given the logo file and the menu links. For a shop
-     it also creates the cart flow: a cart page, an empty-cart page, anonymous and signed-in
-     checkout pages (information, delivery, payment, receipt), the cart service pages, a
-     search-results page, and a sign-in page. Payment and shipping methods are not set up, so the
-     checkout cannot complete an order until they are. Check its status, wired fields, notes
-     (what it left out, a shop header without a cart) and errors. Do not hand-build the chrome
-     while that tool is available.
-4. **Media.** Import the source media (path-preserving and safe to repeat). Side-list its
-   failures and the files it skipped because a different file already had the same path; on an
-   installation with more than one website, check that each of them is this site's own. The media import reads the source 6 files at a time like the extraction, so the
-   same consent applies; without it, upload the images downloaded in step 2.
-5. **Build pages in batches.** For each page, read the extracted page, decide what each block
-   wants to be, and write the plan. Build a batch of pages in one call; the result has per-page
-   results and says whether more pages remain (folders, system and product pages are excluded).
-   While more remain, design and build the next batch, re-sending only failures. Run the batches
-   to completion without stopping between them; the checkpoint is at the end of the phase.
-6. **Verify.** Look for pages whose item cannot be resolved, then check the frontend health of
-   every built page. Report pages built, components used, website settings filled versus skipped,
-   plans that fell back to the faithful mapping, and the side-list.
+   settings item. List that item type's real fields and fill them from the source by meaning: site
+   name, OG image, privacy and cookie links, cookie-banner layout. Skip and side-list analytics
+   ids, verification tokens, social handles, ERP settings, and custom head includes. Then:
+   - Create a color scheme group named after the site with `save_color_schemes`, and a button
+     style with `save_button_styles`. Take the brand's colours from its brand guide if there is
+     one, and from the logo. Check that every text and button colour pair reaches at least 4.5:1
+     contrast. When the brand uses a colour the scheme's standard colours don't cover (a heading,
+     link or accent colour that differs from the text and button colours), first judge whether it
+     matters. If it is a deliberate brand choice (used consistently across the source, or part of
+     the brand's identity), or the user asked for a close copy, give the user two options at the
+     website-proposal checkpoint: align with the scheme's standard colours, or add it as a custom
+     colour (`save_color_scheme_custom_colors`). If it is incidental, align, and say so in the
+     proposal. A custom colour is a CSS variable in each scheme (`--dw-color-<id>`) and does
+     nothing until CSS uses it: write that CSS with the variable and a fallback to the text colour
+     (`var(--dw-color-<id>, var(--dw-color-foreground))`), in a stylesheet of the website's own
+     linked through its "Custom `<head>` include file", or for some paragraphs as a class in a new
+     layout template. Never edit Swift's own templates or stylesheet. Writing that file needs a
+     Files folder the MCP configuration may write to; ask the user to grant one or add the file.
+   - Set the typography from the brand: font, base size, scale and heading case, measured against
+     the original. Name the original's font in the website proposal; when it's a font the solution
+     doesn't have, ask the user to provide it for web use (font files or their web-font service) or
+     to accept the close free font you propose. A typography's font is set by its Google Fonts
+     family name: choose one of the same kind as the original (for example a geometric sans for a
+     geometric sans), with the weights the brand uses. Copy font files from the source only when
+     the user confirms the licence covers the new website; a free font needs no confirmation. The
+     default typography is a starting point, not a decision. Use a new typography named after the
+     site.
+   - Assign the color scheme group, scheme, typography and button style to the website with
+     `save_areas`, and check the served page head for their three stylesheet links.
+   - Build the header and footer (desktop and phone) as pages under a parent page (not at the
+     website's root), each with its rows and one paragraph per column: logo, menu, search, account
+     and cart as the Swift 2 components. Link them in the website's `Swift-v2_Master` fields
+     `HeaderDesktop`, `HeaderMobile`, `FooterDesktop` and `FooterMobile` with
+     `set_item_field_values`. Swift 2 has no mega menu, so one becomes the menu's dropdown. When
+     the solution has another Swift 2 website, `copy_page` its header and footer and adapt them.
+4. **Media.** Upload images with `upload_file_from_url`, fetching the original file, into
+   `/Files/Images/<source site>/`. Before building, check that the image handler serves each
+   format: an AVIF original uploads fine but renders broken, so convert it first or use another
+   format the source offers. Side-list images whose best original is smaller than the width they
+   are shown at, so the owner can supply larger ones. On an installation with more than one
+   website, check that each file is this site's own.
+5. **Build pages.** For each page, decide what each block wants to be, build it as in
+   [Building a page with the standard tools](#building-a-page-with-the-standard-tools), and
+   record each block's place in the block list. Run the pages to completion without stopping
+   between them; the checkpoint is at the end of the phase.
+6. **Verify.** Check the frontend health of every built page, read each one back against the
+   block list, and report pages built, components used, website settings filled versus skipped,
+   and the side-list.
 
 ## Design guide: choosing components and variants
 
@@ -224,20 +198,40 @@ composition serves the content better.
 | A card (image + title + real body text) | `Swift-v2_Card` | `CardImageTop` |
 | A grid of image + label tiles (no body text) | N× `Swift-v2_Poster` in an N-column row | `TextBottomLeft` |
 | A tile with no label (brand-logo tiles) | clickable `Swift-v2_Image` | `Plain` |
-| Carousel/slider (`Children[]`) | `Swift-v2_Slider` | hero: `CardCoverFull`; in-page: `Card` |
-| Product-group showcase (`Options["ProductGroupIds"]`) | omit `Component` | — |
-| Icon + short feature | `Swift-v2_Feature` | `IconLeft` |
-| Expandable sections (`Children[]`) | `Swift-v2_Accordion` | `Flush` |
+| Carousel/slider | `Swift-v2_Slider` | hero: `CardCoverFull`; in-page: `Card` |
+| Icon + feature: an image the source shows small, as a badge or pictogram (for example under about 100 px), whatever its file type; the text may be long. Choose by how the source shows the image, not by its file | `Swift-v2_Feature` | `IconLeft` |
+| Expandable sections | `Swift-v2_Accordion` | `Flush` |
 | Standalone CTA link | `Swift-v2_Button` | `ButtonLeft` |
 | Pull-quote | `Swift-v2_Blockquote` | `LeftLine` |
-| Video | `Swift-v2_VideoPlayer` | `Plain` |
+| Video (a Vimeo or YouTube URL). Keep a text link to the video next to it: like every external embed (a map, a social post), the player shows an empty box until the visitor accepts cookies, and in screenshots | `Swift-v2_VideoPlayer` | `Plain` |
 | Plain image | `Swift-v2_Image` | `Plain` |
-| Unknown / only `RawHtml` | omit `Component`, and side-list it | — |
+| Hand-written HTML | rebuild as the components above, and side-list what has no component | — |
 
-Row layout: pass the source row's `LayoutHint` through when it matches a real `DefinitionId`
-(`1Column`, `2Columns_4-8`, `3Columns`…); otherwise pick by column count. `1Column` always
-renders. When a block fits none of these, read the solution's installed paragraph types and row
-definitions before choosing.
+Row layout: pick the row definition by column count and proportion (`1Column`, `2Columns_4-8`,
+`3Columns`…); `1Column` always renders. When a block fits none of these, read the solution's
+installed paragraph types and row definitions before choosing. Changing a paragraph's item type
+afterwards wipes its fields, so choose before writing content.
+
+## Recipes
+
+- **A form.** Create the form and its fields with the form tools, set the form's template to the
+  design's form template (`Forms/Form/Default.cshtml` on Swift 2; the automatic one renders a
+  broken image per field), place the form app with `place_app_paragraph`, and set only its
+  `FormId` setting.
+- **A table.** A plain `<table>` with `<thead>` and `<tbody>` in a Text paragraph, no styles. Keep
+  it to the columns a phone shows: a wide table pushed a phone page wider than the screen, so
+  split a wide one into rows or cards.
+- **A block the source repeats on several pages.** Build it once, then `copy_grid_row` it to each
+  page and place it with `sort_grid_rows`.
+- **A section's heading row and content row.** Tighten the spacing between them so they read as
+  one section.
+- **A collection (case list, news).** Child pages with a post list that fills itself and an index
+  rebuild; fixed cards only when the index can't be touched, and side-list that choice.
+- **Customer logos.** An image grid in a narrow container, not a slider.
+- **An external call-to-action.** Button fields take a full external URL
+  (`"LinkType":"external"`).
+- **Transparent images and icons.** Check each against its band colour: a white line drawing
+  vanishes on a light band.
 
 ## How a well-built Swift 2 page reads
 
@@ -256,26 +250,36 @@ A Swift 2 catalog has a fixed page structure; keep it as it is:
 - Hidden **Product detail** child (`Swift-v2_ProductDetails`), with a component selector
   pointing at a **Product info** component page
 - All component pages in a **Product Components** folder
+- The service pages tagged `ProductSliderService` and `VariantSelectorService`, and for a shop
+  the cart and checkout pages
 - Optionally, a product group can have its own product detail page, for products that need a
   different page (for example specifications first instead of images): a copy of the detail page
   without the navigation tag, set as the group's Primary page. Products use it only when that
   group is their primary group.
 
+Copy these pages from another Swift 2 website in the solution with `copy_page` (or create them
+with `save_pages` when a copy is refused), then point them at this website: the shop page's shop
+and product page, every component selector and navigation setting, the product slider's
+component page and the specification groups. A copy keeps the source website's page and shop ids
+and its components' content (a stock-locations block, another shop's specification block), and
+still renders, so check every setting on the copies. Check the variant service page carries its
+`VariantSelectorService` tag.
+
+Build this structure whenever the migration scope includes the catalog, and never for a
+content-only migration of a site without commerce, so a brochure site never gets a shop. The
+catalog renders empty until the import step has supplied products, the website is bound to the
+shop, and the product index is built; the catalog tuning in [catalog-tuning.md](catalog-tuning.md)
+builds on this shell. Payment and shipping methods are not set up here, so the checkout cannot
+complete an order until they are.
+
 The layout of these pages is decided for each site. Read what is on them, and the settings of the
 product list and facet components, before changing it, and check the result rendered at desktop
 and phone width.
 
-The chrome tool builds this structure when asked to include the product catalog. Ask for it
-whenever the migration scope includes the catalog, and never for a content-only migration of a
-site without commerce, so a brochure site never gets a shop. The catalog renders empty until the
-import step has supplied products, the website is bound to the shop, and the product index is
-built; the catalog tuning in [catalog-tuning.md](catalog-tuning.md) builds on this shell.
-
 ## Honesty floor
 
-- Account for every block id in `Dispositions`, drops only for the approved reasons, and explain
+- Account for every block in the block list, drops only for the approved reasons, and explain
   notable drops in the summary.
 - Product list and detail pages and unpublished pages appear in the side-list, never rebuilt as
   content or guessed.
-- End the phase with a side-list: drops and why, plans that fell back, and what a human should
-  review.
+- End the phase with a side-list: drops and why, and what a human should review.
